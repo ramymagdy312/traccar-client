@@ -84,12 +84,7 @@ class _MainAppState extends State<MainApp> {
           brightness: Brightness.dark,
         ),
       ),
-      home: Stack(
-        children: const [
-          QuickActionsInitializer(),
-          MainScreen(),
-        ],
-      ),
+      home: Stack(children: const [QuickActionsInitializer(), MainScreen()]),
     );
   }
 }
