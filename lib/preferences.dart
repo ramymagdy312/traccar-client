@@ -10,6 +10,7 @@ class Preferences {
   static late SharedPreferencesWithCache instance;
 
   static const String id = 'id';
+  static const String username = 'username';
   static const String url = 'url';
   static const String accuracy = 'accuracy';
   static const String distance = 'distance';
@@ -21,6 +22,9 @@ class Preferences {
   static const String wakelock = 'wakelock';
   static const String stopDetection = 'stop_detection';
   static const String password = 'password';
+
+  static const String themeMode = 'theme_mode';
+  static const String localeCode = 'locale_code';
 
   static const String lastTimestamp = 'lastTimestamp';
   static const String lastLatitude = 'lastLatitude';
@@ -44,6 +48,7 @@ class Preferences {
       cacheOptions: SharedPreferencesWithCacheOptions(
         allowList: {
           id,
+          username,
           url,
           accuracy,
           distance,
@@ -55,6 +60,8 @@ class Preferences {
           wakelock,
           stopDetection,
           password,
+          themeMode,
+          localeCode,
           lastTimestamp,
           lastLatitude,
           lastLongitude,
@@ -162,8 +169,9 @@ class Preferences {
   static String? _formatUrl(String? url) {
     if (url == null) return null;
     final uri = Uri.parse(url);
-    if ((uri.path.isEmpty || uri.path == '') && !url.endsWith('/'))
+    if ((uri.path.isEmpty || uri.path == '') && !url.endsWith('/')) {
       return '$url/';
+    }
     return url;
   }
 

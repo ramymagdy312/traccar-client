@@ -2,12 +2,15 @@ import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:traccar_client/main.dart';
+import 'package:traccar_client/auth/auth_storage.dart';
+import 'package:traccar_client/auth/auth_gate.dart';
 import 'package:traccar_client/password_service.dart';
 import 'package:traccar_client/preferences.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 
 import 'l10n/app_localizations.dart';
+import 'screens/services_list_screen.dart';
 import 'status_screen.dart';
 import 'settings_screen.dart';
 
@@ -137,6 +140,12 @@ class _MainScreenState extends State<MainScreen> {
               spacing: 8,
               children: [
                 FilledButton.tonal(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ServicesListScreen()));
+                  },
+                  child: const Text('قائمة التشغيلات'),
+                ),
+                FilledButton.tonal(
                   onPressed: () async {
                     try {
                       await bg.BackgroundGeolocation.getCurrentPosition(samples: 1, persist: true, extras: {'manual': true});
@@ -202,7 +211,26 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Traccar Client'),
+        title: Text('SerbTracker Client'),
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              await const AuthStorage().clear();
+              if (!context.mounted) return;
+              final navigator = Navigator.of(context);
+              try {
+                await bg.BackgroundGeolocation.stop();
+              } catch (_) {}
+              if (!context.mounted) return;
+              await navigator.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const AuthGate()),
+                (_) => false,
+              );
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

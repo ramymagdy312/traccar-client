@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:39016471396:android:b1c7194c699bfa25",
         "android_client_info": {
-          "package_name": "org.traccar.client"
+          "package_name": "com.hoppataxi.serbtrackerclient"
         }
       },
       "oauth_client": [],
@@ -26,7 +26,7 @@
               "client_id": "39016471396-7mdutolor3h210bm9qmf60gp18lmmhnm.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "org.traccar.client.TraccarClient"
+                "bundle_id": "com.hoppataxi.serbtrackerclient"
               }
             }
           ]
