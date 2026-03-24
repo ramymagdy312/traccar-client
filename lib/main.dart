@@ -123,6 +123,7 @@ class _MainAppState extends State<MainApp> {
       builder: (context, themeMode, child) => ValueListenableBuilder<Locale?>(
         valueListenable: appLocaleNotifier,
         builder: (context, locale, child) => MaterialApp(
+          debugShowCheckedModeBanner: false,
           scaffoldMessengerKey: messengerKey,
           themeMode: themeMode,
           locale: locale,

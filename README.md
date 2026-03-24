@@ -14,6 +14,13 @@ Traccar Client is a GPS tracking app for Android and iOS. It runs in the backgro
 
 Just enter your server address, grant location permissions, and the app will automatically send periodic location reports in the background.
 
+## User Documentation (Arabic)
+
+- End-user guide: `docs/USER_GUIDE_AR.md`
+- End-user guide (English): `docs/USER_GUIDE_EN.md`
+- Quick Start (English, one page): `docs/QUICK_START_EN.md`
+- Quick Start PDF (print-ready): `docs/QUICK_START_EN.pdf`
+
 ## Team
 
 - Anton Tananaev ([anton@traccar.org](mailto:anton@traccar.org))

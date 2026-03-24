@@ -643,7 +643,7 @@ class _ServiceOrderCard extends StatelessWidget {
     }
   }
 
-  ({Color accent, Color container, Color onContainer, IconData icon}) _statusPalette(
+  ({Color accent, Color accentAlt, Color container, Color onContainer, IconData icon}) _statusPalette(
     ColorScheme cs,
     Brightness brightness,
     int status,
@@ -652,23 +652,25 @@ class _ServiceOrderCard extends StatelessWidget {
     switch (status) {
       case 1:
         return (
-          accent: cs.error,
+          accent: isDark ? const Color(0xFFE57373) : cs.error,
+          accentAlt: isDark ? const Color(0xFFFF8A65) : const Color(0xFFE57373),
           container: cs.errorContainer,
           onContainer: cs.onErrorContainer,
           icon: Icons.play_arrow_rounded,
         );
       case 2:
-        // Use a richer green in dark mode to avoid neon.
         return (
           accent: isDark ? const Color(0xFF43A047) : const Color(0xFF2E7D32),
+          accentAlt: isDark ? const Color(0xFF66BB6A) : const Color(0xFF43A047),
           container: isDark ? const Color(0xFF16361C) : const Color(0xFFE8F5E9),
           onContainer: isDark ? const Color(0xFFB7F0C2) : const Color(0xFF1B5E20),
-          icon: Icons.check_rounded,
+          icon: Icons.check_circle_rounded,
         );
       case 0:
       default:
         return (
           accent: cs.primary,
+          accentAlt: isDark ? const Color(0xFF4DD0E1) : cs.tertiary,
           container: cs.primaryContainer,
           onContainer: cs.onPrimaryContainer,
           icon: Icons.schedule_rounded,
@@ -680,175 +682,301 @@ class _ServiceOrderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = order.trackerStatus;
     final l = AppLocalizations.of(context)!;
-    final brightness = Theme.of(context).brightness;
+    final theme = Theme.of(context);
+    final brightness = theme.brightness;
+    final isDark = brightness == Brightness.dark;
     final palette = _statusPalette(colorScheme, brightness, status);
     final btnText = status == 1 ? endLabel : startLabel;
     final btnAction = status == 2 ? null : (status == 1 ? onEnd : onStart);
     final localeIsArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     final surface = colorScheme.surface;
-    final overlay = palette.accent.withValues(alpha: brightness == Brightness.dark ? 0.10 : 0.06);
+    final overlay = palette.accent.withValues(alpha: isDark ? 0.08 : 0.04);
     final cardBg = Color.alphaBlend(overlay, surface);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       color: cardBg,
-      elevation: 0,
+      elevation: isDark ? 2 : 1,
+      shadowColor: palette.accent.withValues(alpha: isDark ? 0.3 : 0.18),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.55)),
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: palette.accent.withValues(alpha: isDark ? 0.25 : 0.15),
+          width: 1,
+        ),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 6,
-              decoration: BoxDecoration(
-                color: palette.accent,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(18)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header with gradient accent bar ──
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  palette.accent.withValues(alpha: isDark ? 0.2 : 0.12),
+                  palette.accentAlt.withValues(alpha: isDark ? 0.08 : 0.04),
+                ],
               ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: palette.container.withValues(alpha: 0.85),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(palette.icon, size: 16, color: palette.onContainer),
-                              const SizedBox(width: 6),
-                              Text(
-                                _statusLabel(l, status),
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                      color: palette.onContainer,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                            ],
-                          ),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Row(
+              children: [
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        palette.accent.withValues(alpha: 0.9),
+                        palette.accentAlt.withValues(alpha: 0.85),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: palette.accent.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(palette.icon, size: 15, color: Colors.white),
+                      const SizedBox(width: 6),
+                      Text(
+                        _statusLabel(l, status),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                // Time / date
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.6 : 0.7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.access_time_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 5),
+                      Text(
+                        (order.pickupTime != null && order.pickupTime!.isNotEmpty)
+                            ? order.pickupTime!
+                            : order.sODate,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Body content ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Order number
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: palette.accent.withValues(alpha: isDark ? 0.15 : 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.receipt_long_rounded,
+                        size: 20,
+                        color: palette.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             order.sONo,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.2,
-                                ),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.2,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          (order.pickupTime != null && order.pickupTime!.isNotEmpty)
-                              ? order.pickupTime!
-                              : order.sODate,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          if (order.localRef != null && order.localRef!.isNotEmpty)
+                            Text(
+                              order.localRef!,
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${order.custName ?? ''}${order.localRef != null && order.localRef!.isNotEmpty ? ' | ${order.localRef}' : ''}',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            fontSize: 16,
-                            height: 1.3,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (order.transName != null && order.transName!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        order.transName!,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onSurfaceVariant,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                        ],
                       ),
-                    ],
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 8,
-                      children: [
-                        if (order.carNo != null && order.carNo!.isNotEmpty)
-                          _InfoChip(
-                            icon: Icons.directions_car_filled_rounded,
-                            text: order.carNo!,
-                            colorScheme: colorScheme,
-                          ),
-                        _InfoChip(
-                          icon: Icons.calendar_month_rounded,
-                          text: order.sODate,
-                          colorScheme: colorScheme,
-                        ),
-                        _InfoChip(
-                          icon: Icons.person_rounded,
-                          text: '${l.adultsLabel}: ${order.totalAdlt ?? 0}',
-                          colorScheme: colorScheme,
-                        ),
-                        _InfoChip(
-                          icon: Icons.child_care_rounded,
-                          text: '${l.childrenLabel}: ${order.totalChd ?? 0}',
-                          colorScheme: colorScheme,
-                        ),
-                        if (order.maxKM != null)
-                          _InfoChip(
-                            icon: Icons.speed_rounded,
-                            text: '${order.maxKM} ${l.kmLabel}',
-                            colorScheme: colorScheme,
-                            emphasized: true,
-                          ),
-                      ],
                     ),
-                    if (btnAction != null) ...[
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: localeIsArabic ? Alignment.centerLeft : Alignment.centerRight,
-                        child: FilledButton(
-                          onPressed: btnAction,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: palette.accent,
-                            foregroundColor: palette.accent == colorScheme.error ? colorScheme.onError : colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                            textStyle: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(status == 1 ? Icons.stop_rounded : Icons.play_arrow_rounded, size: 18),
-                              const SizedBox(width: 8),
-                              Text(btnText),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
-              ),
+
+                const SizedBox(height: 14),
+
+                // Customer & service type
+                if (order.custName != null && order.custName!.isNotEmpty)
+                  _DetailRow(
+                    icon: Icons.business_rounded,
+                    text: order.custName!,
+                    colorScheme: colorScheme,
+                    accentColor: palette.accent,
+                  ),
+                if (order.transName != null && order.transName!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _DetailRow(
+                    icon: Icons.local_shipping_rounded,
+                    text: order.transName!,
+                    colorScheme: colorScheme,
+                    accentColor: palette.accent,
+                  ),
+                ],
+
+                const SizedBox(height: 14),
+
+                // Info chips in a neat grid
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _InfoChip(
+                      icon: Icons.calendar_month_rounded,
+                      text: order.sODate,
+                      colorScheme: colorScheme,
+                    ),
+                    _InfoChip(
+                      icon: Icons.person_rounded,
+                      text: '${l.adultsLabel}: ${order.totalAdlt ?? 0}',
+                      colorScheme: colorScheme,
+                    ),
+                    _InfoChip(
+                      icon: Icons.child_care_rounded,
+                      text: '${l.childrenLabel}: ${order.totalChd ?? 0}',
+                      colorScheme: colorScheme,
+                    ),
+                    if (order.carNo != null && order.carNo!.isNotEmpty)
+                      _InfoChip(
+                        icon: Icons.directions_car_filled_rounded,
+                        text: order.carNo!,
+                        colorScheme: colorScheme,
+                        accentColor: palette.accent,
+                      ),
+                    if (order.maxKM != null)
+                      _InfoChip(
+                        icon: Icons.speed_rounded,
+                        text: '${order.maxKM} ${l.kmLabel}',
+                        colorScheme: colorScheme,
+                        accentColor: palette.accent,
+                      ),
+                  ],
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // ── Action button footer ──
+          if (btnAction != null)
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              child: Align(
+                alignment: localeIsArabic ? Alignment.centerLeft : Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: btnAction,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 2,
+                    shadowColor: palette.accent.withValues(alpha: 0.4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        status == 1 ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(btnText),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            const SizedBox(height: 8),
+        ],
       ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final ColorScheme colorScheme;
+  final Color accentColor;
+
+  const _DetailRow({
+    required this.icon,
+    required this.text,
+    required this.colorScheme,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: accentColor.withValues(alpha: 0.7)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -857,39 +985,48 @@ class _InfoChip extends StatelessWidget {
   final IconData icon;
   final String text;
   final ColorScheme colorScheme;
-  final bool emphasized;
+  final Color? accentColor;
 
   const _InfoChip({
     required this.icon,
     required this.text,
     required this.colorScheme,
-    this.emphasized = false,
+    this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = emphasized
-        ? colorScheme.secondaryContainer.withValues(alpha: 0.9)
-        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.8);
-    final fg = emphasized ? colorScheme.onSecondaryContainer : colorScheme.onSurfaceVariant;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasAccent = accentColor != null;
+    final bg = hasAccent
+        ? accentColor!.withValues(alpha: isDark ? 0.15 : 0.08)
+        : colorScheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.6 : 0.7);
+    final fg = hasAccent ? accentColor! : colorScheme.onSurfaceVariant;
+    final textColor = hasAccent
+        ? (isDark ? accentColor! : accentColor!.withValues(alpha: 0.85))
+        : colorScheme.onSurfaceVariant;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(10),
+        border: hasAccent
+            ? Border.all(color: accentColor!.withValues(alpha: isDark ? 0.3 : 0.2))
+            : Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: fg),
+          Icon(icon, size: 15, color: fg),
           const SizedBox(width: 6),
           Text(
             text,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: fg,
-                  fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
-                ),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: textColor,
+              fontWeight: hasAccent ? FontWeight.w800 : FontWeight.w600,
+              letterSpacing: 0.1,
+            ),
           ),
         ],
       ),

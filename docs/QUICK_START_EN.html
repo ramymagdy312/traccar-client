@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SerbTracker Client - Quick Start</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #1f2937;
+      line-height: 1.28;
+      font-size: 12px;
+      margin: 0;
+    }
+    h1 { font-size: 18px; margin: 0 0 8px; color: #0f766e; }
+    h2 { font-size: 13px; margin: 8px 0 4px; color: #0f766e; }
+    ul { margin: 0 0 4px 18px; padding: 0; }
+    li { margin: 0 0 2px; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+    }
+    .card {
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 8px;
+      background: #f8fafc;
+    }
+    .full { grid-column: 1 / -1; }
+    .muted { color: #475569; }
+  </style>
+</head>
+<body>
+  <h1>SerbTracker Client - Quick Start (One Page)</h1>
+  <div class="grid">
+    <section class="card">
+      <h2>1) Sign In</h2>
+      <ul>
+        <li>Open app, enter <strong>Username</strong> and <strong>Password</strong>.</li>
+        <li>Tap <strong>Sign in</strong>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>2) Main Navigation</h2>
+      <ul>
+        <li>Tabs: <strong>Services</strong>, <strong>Tracking</strong>, <strong>Settings</strong>.</li>
+        <li>Top header shows username + <strong>Logout</strong>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>3) Services (Daily Workflow)</h2>
+      <ul>
+        <li>Use filters: All / Not started / In progress / Completed.</li>
+        <li>Use search by number, customer, reference, vehicle, or type.</li>
+        <li>Review card details: time, customer, vehicle, Adults/Children, odometer.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>4) Start Order</h2>
+      <ul>
+        <li>Tap <strong>Start</strong>, confirm start meter.</li>
+        <li>Status changes to <strong>In progress</strong>.</li>
+      </ul>
+      <h2>5) End Order</h2>
+      <ul>
+        <li>Tap <strong>End</strong>, enter end meter.</li>
+        <li>End meter must be &gt;= start meter and within allowed distance.</li>
+        <li>Status changes to <strong>Completed</strong>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>6) Tracking</h2>
+      <ul>
+        <li>Enable/disable tracking in <strong>Tracking</strong> tab.</li>
+        <li>Use <strong>Send location</strong> when needed.</li>
+        <li>Use <strong>Show status</strong> for logs/diagnostics.</li>
+      </ul>
+      <h2><code>flutter_background_geolocation</code> Features</h2>
+      <ul class="muted">
+        <li>Background tracking even when app is not foregrounded.</li>
+        <li>Start/stop tracking service from app controls.</li>
+        <li>Manual current-position send.</li>
+        <li>Motion-state aware tracking behavior.</li>
+        <li>Dynamic tracking config updates from Settings.</li>
+        <li>Offline Support: if internet is unavailable 📵, data is buffered and sent when connection returns.</li>
+        <li>Permission and battery-optimization handling prompts.</li>
+        <li>Tracking service stops on logout.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>7) Settings</h2>
+      <ul>
+        <li><strong>Language:</strong> System / Arabic / English</li>
+        <li><strong>Appearance:</strong> System / Light / Dark</li>
+        <li>Adjust tracking settings (ID, URL, accuracy, intervals, ...)</li>
+      </ul>
+    </section>
+    <section class="card full">
+      <h2>8) Logout</h2>
+      <ul>
+        <li>Tap logout icon next to username.</li>
+        <li>Session is cleared and tracking stops.</li>
+      </ul>
+      <h2>Quick Troubleshooting</h2>
+      <ul class="muted">
+        <li><strong>No services:</strong> check internet/account, then tap Retry.</li>
+        <li><strong>Cannot start/end:</strong> verify odometer value and validation message.</li>
+        <li><strong>Tracking issue:</strong> grant location permission and disable battery optimization.</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>
