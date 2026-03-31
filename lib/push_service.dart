@@ -5,7 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
-import 'package:traccar_client/password_service.dart';
+import 'package:serb_tracker_client/firebase_options.dart';
+import 'package:serb_tracker_client/password_service.dart';
 
 import 'preferences.dart';
 

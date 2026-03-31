@@ -50,23 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD5uSOXpbWkR8C3fqdNKQcI7BJrPObpeP4',
-    appId: '1:39016471396:android:b1c7194c699bfa25',
-    messagingSenderId: '39016471396',
-    projectId: 'traccar-client-app',
-    databaseURL: 'https://traccar-client-app.firebaseio.com',
-    storageBucket: 'traccar-client-app.firebasestorage.app',
+    apiKey: 'AIzaSyCSS1KrwN2DGTKVhLdQ0BX12ghJz68wJTE',
+    appId: '1:42493017039:android:0de73fd71366a1c6e2f0ba',
+    messagingSenderId: '42493017039',
+    projectId: 'serb-tracker-client-c8972',
+    storageBucket: 'serb-tracker-client-c8972.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBEdxpKXTvJJfYDh28OLffAk4z7S7caf08',
-    appId: '1:39016471396:ios:78cbbf5775b43308',
-    messagingSenderId: '39016471396',
-    projectId: 'traccar-client-app',
-    databaseURL: 'https://traccar-client-app.firebaseio.com',
-    storageBucket: 'traccar-client-app.firebasestorage.app',
-    iosClientId: '39016471396-7mdutolor3h210bm9qmf60gp18lmmhnm.apps.googleusercontent.com',
-    iosBundleId: 'org.traccar.client.TraccarClient',
+    apiKey: 'AIzaSyBfOxVLsi9O3CyiI3JloMs_gLMgi4GqMEk',
+    appId: '1:42493017039:ios:5588b17e82948cc3e2f0ba',
+    messagingSenderId: '42493017039',
+    projectId: 'serb-tracker-client-c8972',
+    storageBucket: 'serb-tracker-client-c8972.firebasestorage.app',
+    iosBundleId: 'com.hoppataxi.serbtrackerclient',
   );
 
 }

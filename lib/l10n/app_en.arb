@@ -1,6 +1,11 @@
 {
   "trackingTitle": "Tracking",
   "settingsTitle": "Settings",
+  "settingsSubtitle": "Appearance, server, and tracking behavior",
+  "settingsSectionGeneral": "General",
+  "settingsSectionServer": "Server & device",
+  "settingsSectionLocation": "Location",
+  "settingsSectionAdvanced": "Advanced",
   "statusTitle": "Logs",
   "saveButton": "Save",
   "cancelButton": "Cancel",
@@ -33,6 +38,7 @@
   "startAction": "Start service",
   "stopAction": "Stop service",
   "sosAction": "Send SOS",
+  "sosSentSuccess": "Emergency signal sent",
   "loginTitle": "Sign in",
   "loginSubtitle": "Enter your credentials to access the app",
   "usernameLabel": "Username",
@@ -88,5 +94,11 @@
   "languageArabic": "Arabic",
   "languageEnglish": "English",
   "adultsLabel": "Adults",
-  "childrenLabel": "Children"
+  "childrenLabel": "Children",
+  "trackingBadgePaused": "Paused",
+  "trackingBadgeActive": "Active",
+  "trackingBadgeMoving": "Moving",
+  "trackingSubtitlePaused": "Turn on to send your position to the server.",
+  "trackingSubtitleActive": "Tracking on while stationary.",
+  "trackingSubtitleMoving": "Device in motion — location updates more frequently."
 }

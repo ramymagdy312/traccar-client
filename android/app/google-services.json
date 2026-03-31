@@ -1,14 +1,13 @@
 {
   "project_info": {
-    "project_number": "39016471396",
-    "firebase_url": "https://traccar-client-app.firebaseio.com",
-    "project_id": "traccar-client-app",
-    "storage_bucket": "traccar-client-app.firebasestorage.app"
+    "project_number": "42493017039",
+    "project_id": "serb-tracker-client-c8972",
+    "storage_bucket": "serb-tracker-client-c8972.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:39016471396:android:b1c7194c699bfa25",
+        "mobilesdk_app_id": "1:42493017039:android:0de73fd71366a1c6e2f0ba",
         "android_client_info": {
           "package_name": "com.hoppataxi.serbtrackerclient"
         }
@@ -16,20 +15,12 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD5uSOXpbWkR8C3fqdNKQcI7BJrPObpeP4"
+          "current_key": "AIzaSyCSS1KrwN2DGTKVhLdQ0BX12ghJz68wJTE"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "39016471396-7mdutolor3h210bm9qmf60gp18lmmhnm.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.hoppataxi.serbtrackerclient"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

@@ -6,8 +6,8 @@ import 'dart:math';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
-import 'package:traccar_client/location_cache.dart';
-import 'package:traccar_client/preferences.dart';
+import 'package:serb_tracker_client/location_cache.dart';
+import 'package:serb_tracker_client/preferences.dart';
 import 'package:wakelock_partial_android/wakelock_partial_android.dart';
 
 class GeolocationService {

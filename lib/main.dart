@@ -9,11 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:app_links/app_links.dart';
 import 'package:rate_my_app/rate_my_app.dart';
-import 'package:traccar_client/geolocation_service.dart';
-import 'package:traccar_client/password_service.dart';
-import 'package:traccar_client/push_service.dart';
-import 'package:traccar_client/quick_actions.dart';
+import 'package:serb_tracker_client/geolocation_service.dart';
+import 'package:serb_tracker_client/password_service.dart';
+import 'package:serb_tracker_client/push_service.dart';
+import 'package:serb_tracker_client/quick_actions.dart';
 
+import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'auth/auth_gate.dart';
 import 'preferences.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
-import 'package:traccar_client/main.dart';
-import 'package:traccar_client/preferences.dart';
+import 'package:serb_tracker_client/main.dart';
+import 'package:serb_tracker_client/preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import 'auth_api.dart';
@@ -99,16 +99,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 40),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.location_on_rounded,
-                          size: 56,
-                          color: colorScheme.primary,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset(
+                          'assets/app_icon.png',
+                          width: 100,
+                          height: 100,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -144,15 +140,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
-                      child: AutofillGroup(
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              TextFormField(
-                                controller: _usernameController,
+                        child: AutofillGroup(
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextFormField(
+                                  controller: _usernameController,
                                 autofillHints: const [AutofillHints.username],
                                 decoration: InputDecoration(
                                   labelText: AppLocalizations.of(context)!.usernameLabel,

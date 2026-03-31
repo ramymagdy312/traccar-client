@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:traccar_client/main.dart';
-import 'package:traccar_client/preferences.dart';
+import 'package:serb_tracker_client/main.dart';
+import 'package:serb_tracker_client/preferences.dart';
 
 import '../api/fleet_api.dart';
 import '../l10n/app_localizations.dart';

@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
-import 'package:traccar_client/main.dart';
-import 'package:traccar_client/password_service.dart';
-import 'package:traccar_client/qr_code_screen.dart';
+import 'package:serb_tracker_client/main.dart';
+import 'package:serb_tracker_client/password_service.dart';
 import 'package:wakelock_partial_android/wakelock_partial_android.dart';
 
 import 'l10n/app_localizations.dart';
@@ -31,8 +30,129 @@ class _SettingsScreenState extends State<SettingsScreen> {
     };
   }
 
+  Widget _tileLeading(IconData icon) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(icon, color: cs.primary, size: 22),
+    );
+  }
+
+  Widget _buildPageHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final l = AppLocalizations.of(context)!;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            cs.primary.withValues(alpha: 0.14),
+            cs.surfaceContainerHighest.withValues(alpha: 0.55),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(Icons.tune_rounded, color: cs.primary, size: 28),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.settingsTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l.settingsSubtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 14),
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      color: cs.surface.withValues(alpha: theme.brightness == Brightness.dark ? 0.92 : 0.98),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+            child: Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.35,
+              ),
+            ),
+          ),
+          for (int i = 0; i < children.length; i++) ...[
+            if (i > 0)
+              Divider(
+                height: 1,
+                thickness: 1,
+                indent: 16,
+                endIndent: 16,
+                color: cs.outlineVariant.withValues(alpha: 0.35),
+              ),
+            children[i],
+          ],
+          const SizedBox(height: 6),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLanguageTile(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
     final code = Preferences.instance.getString(Preferences.localeCode) ?? 'system';
     final subtitle = switch (code) {
       'ar' => l.languageArabic,
@@ -41,26 +161,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
     };
 
     return ListTile(
-      leading: Icon(Icons.language_rounded, color: Theme.of(context).colorScheme.primary),
-      title: Text(l.languageLabel),
-      subtitle: Text(subtitle),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(Icons.language_rounded),
+      title: Text(l.languageLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: TextStyle(color: cs.onSurfaceVariant)),
+      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
       onTap: () async {
         final chosen = await showDialog<String>(
           context: context,
           builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text(l.languageLabel),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   title: Text(l.languageSystem),
                   onTap: () => Navigator.pop(ctx, 'system'),
                 ),
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   title: Text(l.languageArabic),
                   onTap: () => Navigator.pop(ctx, 'ar'),
                 ),
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   title: Text(l.languageEnglish),
                   onTap: () => Navigator.pop(ctx, 'en'),
                 ),
@@ -79,6 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildThemeModeTile(BuildContext context) {
     final l = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
     final mode = appThemeModeNotifier.value;
     final subtitle = mode == ThemeMode.light
         ? l.themeModeLight
@@ -86,26 +213,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? l.themeModeDark
             : l.themeModeSystem;
     return ListTile(
-      leading: Icon(Icons.palette_outlined, color: Theme.of(context).colorScheme.primary),
-      title: Text(l.themeModeLabel),
-      subtitle: Text(subtitle),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(Icons.palette_rounded),
+      title: Text(l.themeModeLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: TextStyle(color: cs.onSurfaceVariant)),
+      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
       onTap: () async {
         final chosen = await showDialog<ThemeMode>(
           context: context,
           builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             title: Text(l.themeModeLabel),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   title: Text(l.themeModeSystem),
                   onTap: () => Navigator.pop(ctx, ThemeMode.system),
                 ),
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   title: Text(l.themeModeLight),
                   onTap: () => Navigator.pop(ctx, ThemeMode.light),
                 ),
                 ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   title: Text(l.themeModeDark),
                   onTap: () => Navigator.pop(ctx, ThemeMode.dark),
                 ),
@@ -136,6 +269,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             scrollable: true,
             title: Text(title),
             content: TextField(
@@ -191,6 +325,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             scrollable: true,
             content: TextField(
               controller: controller,
@@ -216,7 +351,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Widget _buildListTile(String title, String key, bool isInt) {
+  Widget _buildReadOnlyDeviceIdTile() {
+    final cs = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context)!;
+    final value = Preferences.instance.getString(Preferences.id) ?? '';
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(Icons.badge_outlined),
+      title: Text(l.idLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(
+        value.isEmpty ? '—' : value,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: cs.onSurfaceVariant),
+      ),
+      trailing: Icon(
+        Icons.lock_outline_rounded,
+        size: 20,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.55),
+      ),
+    );
+  }
+
+  Widget _buildListTile(String title, String key, bool isInt, IconData icon) {
+    final cs = Theme.of(context).colorScheme;
     String? value;
     if (isInt) {
       final intValue = Preferences.instance.getInt(key);
@@ -229,34 +387,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
       value = Preferences.instance.getString(key);
     }
     return ListTile(
-      title: Text(title),
-      subtitle: Text(value ?? ''),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(icon),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(
+        value ?? '',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: cs.onSurfaceVariant),
+      ),
+      trailing: Icon(Icons.edit_outlined, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.65)),
       onTap: () => _editSetting(title, key, isInt),
     );
   }
 
   Widget _buildAccuracyListTile() {
+    final cs = Theme.of(context).colorScheme;
     final accuracyOptions = ['highest', 'high', 'medium', 'low'];
     return ListTile(
-      title: Text(AppLocalizations.of(context)!.accuracyLabel),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(Icons.gps_fixed_rounded),
+      title: Text(
+        AppLocalizations.of(context)!.accuracyLabel,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: Text(
         _getAccuracyLabel(Preferences.instance.getString(Preferences.accuracy)),
+        style: TextStyle(color: cs.onSurfaceVariant),
       ),
+      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
       onTap: () async {
         final selectedAccuracy = await showDialog<String>(
           context: context,
           builder:
-              (context) => SimpleDialog(
+              (context) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 title: Text(AppLocalizations.of(context)!.accuracyLabel),
-                children:
-                    accuracyOptions
-                        .map(
-                          (option) => SimpleDialogOption(
-                            child: Text(_getAccuracyLabel(option)),
-                            onPressed: () => Navigator.pop(context, option),
-                          ),
-                        )
-                        .toList(),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children:
+                      accuracyOptions
+                          .map(
+                            (option) => ListTile(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              title: Text(_getAccuracyLabel(option)),
+                              onTap: () => Navigator.pop(context, option),
+                            ),
+                          )
+                          .toList(),
+                ),
               ),
         );
         if (selectedAccuracy != null) {
@@ -275,140 +454,159 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
     final isHighestAccuracy =
         Preferences.instance.getString(Preferences.accuracy) == 'highest';
     final distance = Preferences.instance.getInt(Preferences.distance);
-    return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    AppLocalizations.of(context)!.settingsTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.qr_code_scanner),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const QrCodeScreen()),
-                    );
-                    if (mounted) setState(() {});
-                  },
-                ),
-              ],
-            ),
-          ),
-          _buildLanguageTile(context),
-          _buildThemeModeTile(context),
-          _buildListTile(
-            AppLocalizations.of(context)!.idLabel,
-            Preferences.id,
-            false,
-          ),
-          _buildListTile(
-            AppLocalizations.of(context)!.urlLabel,
-            Preferences.url,
-            false,
-          ),
-          _buildAccuracyListTile(),
-          _buildListTile(
-            AppLocalizations.of(context)!.distanceLabel,
-            Preferences.distance,
-            true,
-          ),
-          if (isHighestAccuracy || Platform.isAndroid && distance == 0)
-            _buildListTile(
-              AppLocalizations.of(context)!.intervalLabel,
-              Preferences.interval,
-              true,
-            ),
-          if (isHighestAccuracy)
-            _buildListTile(
-              AppLocalizations.of(context)!.angleLabel,
-              Preferences.angle,
-              true,
-            ),
-          _buildListTile(
-            AppLocalizations.of(context)!.heartbeatLabel,
-            Preferences.heartbeat,
-            true,
-          ),
+
+    final locationChildren = <Widget>[
+      _buildAccuracyListTile(),
+      _buildListTile(
+        l.distanceLabel,
+        Preferences.distance,
+        true,
+        Icons.straighten_rounded,
+      ),
+      if (isHighestAccuracy || Platform.isAndroid && distance == 0)
+        _buildListTile(
+          l.intervalLabel,
+          Preferences.interval,
+          true,
+          Icons.schedule_rounded,
+        ),
+      if (isHighestAccuracy)
+        _buildListTile(
+          l.angleLabel,
+          Preferences.angle,
+          true,
+          Icons.explore_rounded,
+        ),
+      _buildListTile(
+        l.heartbeatLabel,
+        Preferences.heartbeat,
+        true,
+        Icons.monitor_heart_outlined,
+      ),
+    ];
+
+    final advancedChildren = <Widget>[
+      SwitchListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        secondary: _tileLeading(Icons.tune_rounded),
+        title: Text(l.advancedLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+        value: advanced,
+        activeTrackColor: cs.secondary.withValues(alpha: 0.65),
+        onChanged: (value) {
+          setState(() => advanced = value);
+        },
+      ),
+      if (advanced) ...[
+        _buildListTile(
+          l.fastestIntervalLabel,
+          Preferences.fastestInterval,
+          true,
+          Icons.speed_rounded,
+        ),
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          secondary: _tileLeading(Icons.cloud_queue_rounded),
+          title: Text(l.bufferLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+          value: Preferences.instance.getBool(Preferences.buffer) ?? true,
+          activeTrackColor: cs.secondary.withValues(alpha: 0.65),
+          onChanged: (value) async {
+            await Preferences.instance.setBool(Preferences.buffer, value);
+            await bg.BackgroundGeolocation.setConfig(
+              Preferences.geolocationConfig(),
+            );
+            setState(() {});
+          },
+        ),
+        if (Platform.isAndroid)
           SwitchListTile(
-            title: Text(AppLocalizations.of(context)!.advancedLabel),
-            value: advanced,
-            onChanged: (value) {
-              setState(() => advanced = value);
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            secondary: _tileLeading(Icons.stay_current_portrait_rounded),
+            title: Text(l.wakelockLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+            value:
+                Preferences.instance.getBool(Preferences.wakelock) ?? false,
+            activeTrackColor: cs.secondary.withValues(alpha: 0.65),
+            onChanged: (value) async {
+              await Preferences.instance.setBool(Preferences.wakelock, value);
+              if (value) {
+                final state = await bg.BackgroundGeolocation.state;
+                if (state.isMoving == true) {
+                  WakelockPartialAndroid.acquire();
+                }
+              } else {
+                WakelockPartialAndroid.release();
+              }
+              setState(() {});
             },
           ),
-          if (advanced)
-            _buildListTile(
-              AppLocalizations.of(context)!.fastestIntervalLabel,
-              Preferences.fastestInterval,
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          secondary: _tileLeading(Icons.pause_circle_outline_rounded),
+          title: Text(l.stopDetectionLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+          value:
+              Preferences.instance.getBool(Preferences.stopDetection) ??
               true,
+          activeTrackColor: cs.secondary.withValues(alpha: 0.65),
+          onChanged: (value) async {
+            await Preferences.instance.setBool(
+              Preferences.stopDetection,
+              value,
+            );
+            await bg.BackgroundGeolocation.setConfig(
+              Preferences.geolocationConfig(),
+            );
+            setState(() {});
+          },
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          leading: _tileLeading(Icons.lock_outline_rounded),
+          title: Text(l.passwordLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+          trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+          onTap: _changePassword,
+        ),
+      ],
+    ];
+
+    return Scaffold(
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+          children: [
+            _buildPageHeader(context),
+            const SizedBox(height: 6),
+            _sectionCard(
+              context,
+              title: l.settingsSectionGeneral,
+              children: [
+                _buildLanguageTile(context),
+                _buildThemeModeTile(context),
+              ],
             ),
-          if (advanced)
-            SwitchListTile(
-              title: Text(AppLocalizations.of(context)!.bufferLabel),
-              value: Preferences.instance.getBool(Preferences.buffer) ?? true,
-              onChanged: (value) async {
-                await Preferences.instance.setBool(Preferences.buffer, value);
-                await bg.BackgroundGeolocation.setConfig(
-                  Preferences.geolocationConfig(),
-                );
-                setState(() {});
-              },
+            _sectionCard(
+              context,
+              title: l.settingsSectionServer,
+              children: [
+                _buildReadOnlyDeviceIdTile(),
+                _buildListTile(l.urlLabel, Preferences.url, false, Icons.link_rounded),
+              ],
             ),
-          if (advanced && Platform.isAndroid)
-            SwitchListTile(
-              title: Text(AppLocalizations.of(context)!.wakelockLabel),
-              value:
-                  Preferences.instance.getBool(Preferences.wakelock) ?? false,
-              onChanged: (value) async {
-                await Preferences.instance.setBool(Preferences.wakelock, value);
-                if (value) {
-                  final state = await bg.BackgroundGeolocation.state;
-                  if (state.isMoving == true) {
-                    WakelockPartialAndroid.acquire();
-                  }
-                } else {
-                  WakelockPartialAndroid.release();
-                }
-                setState(() {});
-              },
+            _sectionCard(
+              context,
+              title: l.settingsSectionLocation,
+              children: locationChildren,
             ),
-          if (advanced)
-            SwitchListTile(
-              title: Text(AppLocalizations.of(context)!.stopDetectionLabel),
-              value:
-                  Preferences.instance.getBool(Preferences.stopDetection) ??
-                  true,
-              onChanged: (value) async {
-                await Preferences.instance.setBool(
-                  Preferences.stopDetection,
-                  value,
-                );
-                await bg.BackgroundGeolocation.setConfig(
-                  Preferences.geolocationConfig(),
-                );
-                setState(() {});
-              },
+            _sectionCard(
+              context,
+              title: l.settingsSectionAdvanced,
+              children: advancedChildren,
             ),
-          if (advanced)
-            ListTile(
-              title: Text(AppLocalizations.of(context)!.passwordLabel),
-              onTap: _changePassword,
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

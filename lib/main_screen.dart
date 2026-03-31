@@ -1,11 +1,11 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:traccar_client/main.dart';
-import 'package:traccar_client/auth/auth_storage.dart';
-import 'package:traccar_client/auth/auth_gate.dart';
-import 'package:traccar_client/password_service.dart';
-import 'package:traccar_client/preferences.dart';
+import 'package:serb_tracker_client/main.dart';
+import 'package:serb_tracker_client/auth/auth_storage.dart';
+import 'package:serb_tracker_client/auth/auth_gate.dart';
+import 'package:serb_tracker_client/password_service.dart';
+import 'package:serb_tracker_client/preferences.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 
@@ -24,6 +24,19 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   bool trackingEnabled = false;
   bool? isMoving;
+
+  Future<void> _logout() async {
+    final navigator = Navigator.of(context);
+    try {
+      await bg.BackgroundGeolocation.stop();
+    } catch (_) {}
+    await const AuthStorage().clear();
+    if (!mounted) return;
+    await navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthGate()),
+      (_) => false,
+    );
+  }
 
   @override
   void initState() {
@@ -216,19 +229,7 @@ class _MainScreenState extends State<MainScreen> {
           IconButton(
             tooltip: 'Logout',
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await const AuthStorage().clear();
-              if (!context.mounted) return;
-              final navigator = Navigator.of(context);
-              try {
-                await bg.BackgroundGeolocation.stop();
-              } catch (_) {}
-              if (!context.mounted) return;
-              await navigator.pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const AuthGate()),
-                (_) => false,
-              );
-            },
+            onPressed: _logout,
           ),
         ],
       ),

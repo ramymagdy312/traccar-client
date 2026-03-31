@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
@@ -21,19 +23,19 @@ class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
 
   static const List<_NavItemData> _tabData = [
-    _NavItemData(key: 'services', icon: Icons.list_alt),
-    _NavItemData(key: 'tracking', icon: Icons.location_on),
-    _NavItemData(key: 'settings', icon: Icons.settings),
+    _NavItemData(key: 'services', icon: Icons.list_alt_rounded, activeIcon: Icons.list_alt_rounded),
+    _NavItemData(key: 'tracking', icon: Icons.location_on_outlined, activeIcon: Icons.location_on_rounded),
+    _NavItemData(key: 'settings', icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded),
   ];
 
   Future<void> _logout() async {
     final navigator = Navigator.of(context);
-    await const AuthStorage().clear();
-    await Preferences.instance.remove(Preferences.username);
-    if (!mounted) return;
     try {
       await bg.BackgroundGeolocation.stop();
     } catch (_) {}
+    await const AuthStorage().clear();
+    await Preferences.instance.remove(Preferences.username);
+    if (!mounted) return;
     if (!mounted) return;
     await navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthGate()),
@@ -150,37 +152,157 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.shadow.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (int index) => setState(() => _currentIndex = index),
-          destinations: _tabLabels(context),
-        ),
+      bottomNavigationBar: _PremiumNavBar(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+        items: _tabData,
       ),
     );
-  }
-
-  List<NavigationDestination> _tabLabels(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-    return [
-      NavigationDestination(icon: Icon(_tabData[0].icon), label: l.servicesTabLabel),
-      NavigationDestination(icon: Icon(_tabData[1].icon), label: l.trackingTabLabel),
-      NavigationDestination(icon: Icon(_tabData[2].icon), label: l.settingsTabLabel),
-    ];
   }
 }
 
 class _NavItemData {
   final String key;
   final IconData icon;
-  const _NavItemData({required this.key, required this.icon});
+  final IconData activeIcon;
+  const _NavItemData({required this.key, required this.icon, required this.activeIcon});
+}
+
+class _PremiumNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  final List<_NavItemData> items;
+
+  const _PremiumNavBar({
+    required this.currentIndex,
+    required this.onTap,
+    required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final l = AppLocalizations.of(context)!;
+    final labels = [l.servicesTabLabel, l.trackingTabLabel, l.settingsTabLabel];
+    final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: (isDark ? cs.surface : cs.surfaceContainerLowest)
+                .withValues(alpha: isDark ? 0.85 : 0.92),
+            border: Border(
+              top: BorderSide(
+                color: cs.outlineVariant.withValues(alpha: isDark ? 0.2 : 0.15),
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: cs.shadow.withValues(alpha: isDark ? 0.25 : 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, -6),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.only(bottom: bottomPadding, top: 6),
+          child: Row(
+            children: List.generate(items.length, (i) {
+              final selected = i == currentIndex;
+              return Expanded(
+                child: _NavItem(
+                  icon: items[i].icon,
+                  activeIcon: items[i].activeIcon,
+                  label: labels[i],
+                  selected: selected,
+                  onTap: () => onTap(i),
+                ),
+              );
+            }),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final iconColor = selected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.6);
+    final labelColor = selected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.55);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.symmetric(
+                horizontal: selected ? 20 : 12,
+                vertical: selected ? 8 : 6,
+              ),
+              decoration: BoxDecoration(
+                color: selected
+                    ? cs.primary.withValues(alpha: isDark ? 0.15 : 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOutCubic,
+                transitionBuilder: (child, animation) => ScaleTransition(
+                  scale: Tween<double>(begin: 0.8, end: 1.0).animate(animation),
+                  child: FadeTransition(opacity: animation, child: child),
+                ),
+                child: Icon(
+                  selected ? activeIcon : icon,
+                  key: ValueKey(selected),
+                  size: selected ? 26 : 24,
+                  color: iconColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 250),
+              style: theme.textTheme.labelSmall!.copyWith(
+                color: labelColor,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: selected ? 12 : 11,
+                letterSpacing: selected ? 0.3 : 0,
+              ),
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

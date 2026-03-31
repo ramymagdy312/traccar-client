@@ -1,6 +1,11 @@
 {
   "trackingTitle": "التتبع",
   "settingsTitle": "الإعدادات",
+  "settingsSubtitle": "المظهر، الخادم، وسلوك التتبع",
+  "settingsSectionGeneral": "عام",
+  "settingsSectionServer": "الخادم والجهاز",
+  "settingsSectionLocation": "الموقع",
+  "settingsSectionAdvanced": "متقدم",
   "statusTitle": "السجلات",
   "saveButton": "حفظ",
   "cancelButton": "إلغاء",
@@ -33,6 +38,7 @@
   "startAction": "بدء الخدمة",
   "stopAction": "إيقاف الخدمة",
   "sosAction": "إرسال SOS",
+  "sosSentSuccess": "تم إرسال إشارة الطوارئ",
   "loginTitle": "تسجيل الدخول",
   "loginSubtitle": "أدخل بياناتك للوصول إلى التطبيق",
   "usernameLabel": "اسم المستخدم",
@@ -88,5 +94,11 @@
   "languageArabic": "العربية",
   "languageEnglish": "English",
   "adultsLabel": "كبار",
-  "childrenLabel": "صغار"
+  "childrenLabel": "صغار",
+  "trackingBadgePaused": "متوقف",
+  "trackingBadgeActive": "نشط",
+  "trackingBadgeMoving": "متحرك",
+  "trackingSubtitlePaused": "فعّل التتبع لإرسال موقعك إلى الخادم.",
+  "trackingSubtitleActive": "التتبع مفعّل — الجهاز ثابت.",
+  "trackingSubtitleMoving": "الجهاز يتحرك — تحديثات الموقع بوتيرة أعلى."
 }
