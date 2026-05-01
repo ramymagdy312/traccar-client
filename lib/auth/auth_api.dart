@@ -1,48 +1,115 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
 
-import 'package:http/http.dart' as http;
-
+import '../api/dio_client.dart';
 import 'auth_token.dart';
 
+class InvalidCredentialsException implements Exception {
+  const InvalidCredentialsException();
+
+  @override
+  String toString() => 'Invalid credentials';
+}
+
 class AuthApi {
-  final http.Client _client;
-  final Uri _endpoint;
+  final Dio _dio;
+  final String _loginPath;
+  final String _refreshPath;
 
   AuthApi({
-    http.Client? client,
-    Uri? endpoint,
-  }) : _client = client ?? http.Client(),
-       _endpoint = endpoint ?? Uri.parse('https://fleet.hoppataxi.com/Account/getAuthToken');
+    Dio? dio,
+    String loginPath = '/Account/getAuthToken',
+    String refreshPath = '/Account/RefreshToken',
+  })  : _dio = dio ?? DioClient.instance,
+        _loginPath = loginPath,
+        _refreshPath = refreshPath;
+
+  static final Options _skipAuthOptions = Options(
+    extra: const {DioClient.skipAuthKey: true},
+  );
 
   Future<AuthToken> login({
     required String username,
     required String password,
-    String userImei = '',
   }) async {
-    final response = await _client.post(
-      _endpoint,
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'username': username,
-        'password': password,
-        'UserIEMI': userImei,
-      }),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Login failed (${response.statusCode})');
+    final Response<dynamic> response;
+    try {
+      response = await _dio.post<dynamic>(
+        _loginPath,
+        data: {'username': username, 'password': password},
+        options: _skipAuthOptions,
+      );
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      throw Exception('Login failed${status != null ? ' ($status)' : ''}');
     }
 
-    final json = jsonDecode(response.body);
-    if (json is! Map<String, dynamic>) {
+    final data = response.data;
+    if (data is! Map) {
       throw Exception('Unexpected response format');
     }
 
-    final token = AuthToken.fromJson(json);
+    final payload = Map<String, dynamic>.from(data);
+    final token = AuthToken.fromJson(payload);
     if (!token.isValid) {
-      throw Exception(token.error?.isNotEmpty == true ? token.error : 'Invalid credentials');
+      if (_isAuthenticationFailure(payload, token)) {
+        throw const InvalidCredentialsException();
+      }
+      throw Exception(token.error?.isNotEmpty == true ? token.error : 'Login failed');
+    }
+    return token;
+  }
+
+  bool _isAuthenticationFailure(Map<String, dynamic> payload, AuthToken token) {
+    final hasMissingAccessToken = token.accessToken.isEmpty;
+    final hasInvalidUserState = (token.userId ?? 0) <= 0;
+    final hasInvalidRepState = (token.repId ?? 0) <= 0;
+    final hasAuthFailureError = _looksLikeAuthFailure(
+      (payload['Error'] ?? payload['error'])?.toString(),
+    );
+
+    return hasMissingAccessToken &&
+        (hasAuthFailureError || hasInvalidUserState || hasInvalidRepState);
+  }
+
+  bool _looksLikeAuthFailure(String? raw) {
+    final value = raw?.trim().toLowerCase();
+    if (value == null || value.isEmpty) return false;
+    return value.contains('auth') ||
+        value.contains('login') ||
+        value.contains('credential') ||
+        value.contains('username') ||
+        value.contains('password') ||
+        value.contains('unauthor');
+  }
+
+  /// Refresh the access token using the refresh-token cookie that was
+  /// automatically stored by [DioClient]'s cookie jar during login.
+  Future<AuthToken> refreshToken() async {
+    final Response<dynamic> response;
+    try {
+      response = await _dio.post<dynamic>(
+        _refreshPath,
+        data: const <String, dynamic>{},
+        options: _skipAuthOptions,
+      );
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      throw Exception(
+        'Refresh token failed${status != null ? ' ($status)' : ''}',
+      );
+    }
+
+    final data = response.data;
+    if (data is! Map) {
+      throw Exception('Unexpected refresh response format');
+    }
+
+    final token = AuthToken.fromJson(Map<String, dynamic>.from(data));
+    if (!token.isValid) {
+      throw Exception(
+        token.error?.isNotEmpty == true ? token.error : 'Invalid refresh token',
+      );
     }
     return token;
   }
 }
-

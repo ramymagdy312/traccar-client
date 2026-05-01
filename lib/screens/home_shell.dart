@@ -2,9 +2,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../api/dio_client.dart';
 import '../l10n/app_localizations.dart';
 import '../auth/auth_gate.dart';
 import '../auth/auth_storage.dart';
+import '../auth/session_manager.dart';
 import '../preferences.dart';
 import 'services_list_screen.dart';
 import 'tracking_screen.dart';
@@ -29,13 +31,35 @@ class _HomeShellState extends State<HomeShell> {
   ];
 
   Future<void> _logout() async {
+    final l = AppLocalizations.of(context)!;
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.logoutTooltip),
+        content: Text(l.logoutConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.logoutTooltip),
+          ),
+        ],
+      ),
+    );
+    if (shouldLogout != true) return;
+
+    if (!mounted) return;
     final navigator = Navigator.of(context);
+    SessionManager.cancelScheduledRefresh();
     try {
       await bg.BackgroundGeolocation.stop();
     } catch (_) {}
-    await const AuthStorage().clear();
+    await const AuthStorage().clearAll();
+    await DioClient.clearCookies();
     await Preferences.instance.remove(Preferences.username);
-    if (!mounted) return;
     if (!mounted) return;
     await navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthGate()),

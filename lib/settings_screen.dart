@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
     as bg;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:serb_tracker_client/auth/auth_gate.dart';
+import 'package:serb_tracker_client/auth/auth_storage.dart';
+import 'package:serb_tracker_client/auth/session_manager.dart';
+import 'package:serb_tracker_client/api/dio_client.dart';
 import 'package:serb_tracker_client/main.dart';
-import 'package:serb_tracker_client/password_service.dart';
 import 'package:wakelock_partial_android/wakelock_partial_android.dart';
 
 import 'l10n/app_localizations.dart';
@@ -20,6 +24,59 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool advanced = false;
+  String _appVersion = '—';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      setState(() => _appVersion = '${info.version}+${info.buildNumber}');
+    } catch (_) {
+      // Keep graceful fallback when platform info is unavailable.
+    }
+  }
+
+  Future<void> _logout() async {
+    final l = AppLocalizations.of(context)!;
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.logoutTooltip),
+        content: Text(l.logoutConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l.cancelButton),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l.logoutTooltip),
+          ),
+        ],
+      ),
+    );
+    if (shouldLogout != true || !mounted) return;
+
+    final navigator = Navigator.of(context);
+    SessionManager.cancelScheduledRefresh();
+    try {
+      await bg.BackgroundGeolocation.stop();
+    } catch (_) {}
+    await const AuthStorage().clearAll();
+    await DioClient.clearCookies();
+    await Preferences.instance.remove(Preferences.username);
+    if (!mounted) return;
+    await navigator.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthGate()),
+      (_) => false,
+    );
+  }
 
   String _getAccuracyLabel(String? key) {
     return switch (key) {
@@ -256,6 +313,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildAppVersionTile(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(Icons.info_outline_rounded),
+      title: Text(
+        l.appVersionLabel,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        _appVersion,
+        style: TextStyle(color: cs.onSurfaceVariant),
+      ),
+    );
+  }
+
+  Widget _buildLogoutTile(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(Icons.logout_rounded),
+      title: Text(
+        l.logoutTooltip,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
+      onTap: _logout,
+    );
+  }
+
   Future<void> _editSetting(String title, String key, bool isInt) async {
     final initialValue =
         isInt
@@ -263,7 +355,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : Preferences.instance.getString(key) ?? '';
 
     final controller = TextEditingController(text: initialValue);
-    final errorMessage = AppLocalizations.of(context)!.invalidValue;
 
     final result = await showDialog<String>(
       context: context,
@@ -292,17 +383,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if (result != null && result.isNotEmpty) {
-      if (key == Preferences.url) {
-        final uri = Uri.tryParse(result);
-        if (uri == null ||
-            uri.host.isEmpty ||
-            !(uri.scheme == 'http' || uri.scheme == 'https')) {
-          messengerKey.currentState?.showSnackBar(
-            SnackBar(content: Text(errorMessage)),
-          );
-          return;
-        }
-      }
       if (isInt) {
         int? intValue = int.tryParse(result);
         if (intValue != null) {
@@ -317,60 +397,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await bg.BackgroundGeolocation.setConfig(Preferences.geolocationConfig());
       setState(() {});
     }
-  }
-
-  Future<void> _changePassword() async {
-    final controller = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            scrollable: true,
-            content: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: AppLocalizations.of(context)!.passwordLabel,
-              ),
-              obscureText: true,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(AppLocalizations.of(context)!.cancelButton),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(AppLocalizations.of(context)!.saveButton),
-              ),
-            ],
-          ),
-    );
-    if (result == true) {
-      await PasswordService.setPassword(controller.text);
-    }
-  }
-
-  Widget _buildReadOnlyDeviceIdTile() {
-    final cs = Theme.of(context).colorScheme;
-    final l = AppLocalizations.of(context)!;
-    final value = Preferences.instance.getString(Preferences.id) ?? '';
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: _tileLeading(Icons.badge_outlined),
-      title: Text(l.idLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(
-        value.isEmpty ? '—' : value,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: cs.onSurfaceVariant),
-      ),
-      trailing: Icon(
-        Icons.lock_outline_rounded,
-        size: 20,
-        color: cs.onSurfaceVariant.withValues(alpha: 0.55),
-      ),
-    );
   }
 
   Widget _buildListTile(String title, String key, bool isInt, IconData icon) {
@@ -562,13 +588,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             setState(() {});
           },
         ),
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: _tileLeading(Icons.lock_outline_rounded),
-          title: Text(l.passwordLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
-          trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
-          onTap: _changePassword,
-        ),
       ],
     ];
 
@@ -585,14 +604,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _buildLanguageTile(context),
                 _buildThemeModeTile(context),
-              ],
-            ),
-            _sectionCard(
-              context,
-              title: l.settingsSectionServer,
-              children: [
-                _buildReadOnlyDeviceIdTile(),
-                _buildListTile(l.urlLabel, Preferences.url, false, Icons.link_rounded),
+                _buildAppVersionTile(context),
+                _buildLogoutTile(context),
               ],
             ),
             _sectionCard(

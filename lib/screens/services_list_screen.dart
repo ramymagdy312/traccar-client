@@ -14,13 +14,21 @@ class ServicesListScreen extends StatefulWidget {
   State<ServicesListScreen> createState() => _ServicesListScreenState();
 }
 
+/// View states the screen can be in. Driven by a small set of source-of-truth
+/// flags below; never set directly.
+enum _ViewState { initialLoading, error, empty, content }
+
 class _ServicesListScreenState extends State<ServicesListScreen> {
   final FleetApi _api = FleetApi();
   List<ServiceOrder> _allOrders = [];
   List<ServiceOrder> _filteredOrders = [];
-  int _statusFilter = 0; // 0=الكل, 1=لم يبدأ, 2=قيد التنفيذ, 3=منتهي
-  bool _loading = true;
+  int _statusFilter = 0;
+
+  // ── State source-of-truth flags ──
+  bool _isLoading = false;
+  bool _hasLoadedOnce = false;
   String? _error;
+
   final TextEditingController _searchController = TextEditingController();
 
   static String _formatDate(DateTime d) => DateFormat('dd/MM/yyyy').format(d);
@@ -38,45 +46,61 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     super.dispose();
   }
 
+  /// Derive the current view state from the source-of-truth flags.
+  /// Keeping this as a pure getter avoids accidental drift between flags.
+  _ViewState get _viewState {
+    if (_isLoading && !_hasLoadedOnce) return _ViewState.initialLoading;
+    if (_error != null && _allOrders.isEmpty) return _ViewState.error;
+    if (_filteredOrders.isEmpty) return _ViewState.empty;
+    return _ViewState.content;
+  }
+
+  /// Fetch services. Re-entrancy is guarded by [_isLoading] so that the user
+  /// cannot fire multiple requests by tapping reload repeatedly. On refresh
+  /// from a populated list, we keep the existing data on screen until the
+  /// new response arrives — no flicker — and surface failures via a SnackBar.
   Future<void> _loadServices() async {
+    if (_isLoading) return;
+
     setState(() {
-      _loading = true;
+      _isLoading = true;
       _error = null;
     });
-
-    final repIdStr = Preferences.instance.getString(Preferences.id);
-    final repId = int.tryParse(repIdStr ?? '');
-    if (repId == null || repId == 0) {
-      setState(() {
-        _loading = false;
-        _error = 'rep_id_missing';
-      });
-      return;
-    }
 
     try {
       final now = DateTime.now();
       final dateFrom = now.subtract(const Duration(days: 1));
       final dateTo = now.add(const Duration(days: 1));
       final list = await _api.getServiceOrders(
-        repId: repId,
         dateFrom: _formatDate(dateFrom),
         dateTo: _formatDate(dateTo),
-        sOMainId: 0,
       );
       if (!mounted) return;
       setState(() {
         _allOrders = list;
-        _loading = false;
+        _isLoading = false;
+        _hasLoadedOnce = true;
         _error = null;
       });
       _applyFilter();
     } catch (e) {
       if (!mounted) return;
+      final message = e.toString().replaceFirst('Exception: ', '');
       setState(() {
-        _loading = false;
-        _error = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+        _hasLoadedOnce = true;
+        _error = message;
       });
+      // Don't lose existing data on a refresh failure — keep it visible and
+      // surface the error inline as a SnackBar instead.
+      if (_allOrders.isNotEmpty) {
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(message),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
       _applyFilter();
     }
   }
@@ -85,19 +109,21 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     String query = _searchController.text.trim().toLowerCase();
     int status = _statusFilter;
 
-    _filteredOrders = _allOrders.where((o) {
-      final matchStatus = status == 0 ||
-          (status == 1 && o.trackerStatus == 0) ||
-          (status == 2 && o.trackerStatus == 1) ||
-          (status == 3 && o.trackerStatus == 2);
-      if (!matchStatus) return false;
-      if (query.isEmpty) return true;
-      return (o.sONo.toLowerCase().contains(query)) ||
-          (o.custName?.toLowerCase().contains(query) ?? false) ||
-          (o.localRef?.toLowerCase().contains(query) ?? false) ||
-          (o.carNo?.toLowerCase().contains(query) ?? false) ||
-          (o.transName?.toLowerCase().contains(query) ?? false);
-    }).toList();
+    _filteredOrders =
+        _allOrders.where((o) {
+          final matchStatus =
+              status == 0 ||
+              (status == 1 && o.trackerStatus == 0) ||
+              (status == 2 && o.trackerStatus == 1) ||
+              (status == 3 && o.trackerStatus == 2);
+          if (!matchStatus) return false;
+          if (query.isEmpty) return true;
+          return (o.sONo.toLowerCase().contains(query)) ||
+              (o.custName?.toLowerCase().contains(query) ?? false) ||
+              (o.localRef?.toLowerCase().contains(query) ?? false) ||
+              (o.carNo?.toLowerCase().contains(query) ?? false) ||
+              (o.transName?.toLowerCase().contains(query) ?? false);
+        }).toList();
 
     if (mounted) setState(() {});
   }
@@ -119,7 +145,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
                 Expanded(
                   child: Text(
                     l.servicesListTitle,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -133,9 +161,7 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
             ),
           ),
           _buildFilterChips(theme),
-          Expanded(
-            child: _buildBody(colorScheme),
-          ),
+          Expanded(child: _buildBody(colorScheme)),
         ],
       ),
     );
@@ -143,15 +169,16 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
 
   Map<int, int> _countsForCurrentQuery() {
     final query = _searchController.text.trim().toLowerCase();
-    final source = query.isEmpty
-        ? _allOrders
-        : _allOrders.where((o) {
-            return (o.sONo.toLowerCase().contains(query)) ||
-                (o.custName?.toLowerCase().contains(query) ?? false) ||
-                (o.localRef?.toLowerCase().contains(query) ?? false) ||
-                (o.carNo?.toLowerCase().contains(query) ?? false) ||
-                (o.transName?.toLowerCase().contains(query) ?? false);
-          }).toList();
+    final source =
+        query.isEmpty
+            ? _allOrders
+            : _allOrders.where((o) {
+              return (o.sONo.toLowerCase().contains(query)) ||
+                  (o.custName?.toLowerCase().contains(query) ?? false) ||
+                  (o.localRef?.toLowerCase().contains(query) ?? false) ||
+                  (o.carNo?.toLowerCase().contains(query) ?? false) ||
+                  (o.transName?.toLowerCase().contains(query) ?? false);
+            }).toList();
 
     final all = source.length;
     final notStarted = source.where((o) => o.trackerStatus == 0).length;
@@ -209,10 +236,11 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
         ],
       ),
       selected: selected,
-      onSelected: (_) => setState(() {
-        _statusFilter = value;
-        _applyFilter();
-      }),
+      onSelected:
+          (_) => setState(() {
+            _statusFilter = value;
+            _applyFilter();
+          }),
       selectedColor: cs.primaryContainer,
       checkmarkColor: cs.primary,
       showCheckmark: false,
@@ -221,84 +249,98 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
 
   List<String> get _filterLabels {
     final l = AppLocalizations.of(context)!;
-    return [l.filterAll, l.filterNotStarted, l.filterInProgress, l.filterCompleted];
+    return [
+      l.filterAll,
+      l.filterNotStarted,
+      l.filterInProgress,
+      l.filterCompleted,
+    ];
   }
 
   Widget _buildBody(ColorScheme colorScheme) {
     final l = AppLocalizations.of(context)!;
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
 
-    if (_error != null) {
-      final message = _error == 'rep_id_missing' ? l.repIdMissing : _error!;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(message, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _loadServices,
-                child: Text(l.retryButton),
-              ),
-            ],
+    // Smooth transitions between Loading / Error / Empty / Content states.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder:
+          (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+      child: KeyedSubtree(
+        key: ValueKey(_viewState),
+        child: switch (_viewState) {
+          _ViewState.initialLoading => const Center(
+            child: CircularProgressIndicator(),
           ),
-        ),
-      );
-    }
-
-    if (_filteredOrders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inbox_rounded, size: 64, color: colorScheme.outline.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            Text(
-              l.noServices,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
+          _ViewState.error => _ScrollablePlaceholder(
+            onRefresh: _loadServices,
+            child: _StatePlaceholder(
+              icon: Icons.cloud_off_rounded,
+              iconColor: colorScheme.error,
+              title: l.failedToLoadTitle,
+              subtitle: _error,
+              buttonLabel: l.retryButton,
+              buttonIcon: Icons.replay_rounded,
+              onPressed: _loadServices,
+              isBusy: _isLoading,
             ),
-          ],
-        ),
-      );
-    }
+          ),
+          _ViewState.empty => _ScrollablePlaceholder(
+            onRefresh: _loadServices,
+            child: _StatePlaceholder(
+              icon: Icons.inbox_rounded,
+              iconColor: colorScheme.primary,
+              title: l.noServices,
+              subtitle: l.emptyServicesHint,
+              buttonLabel: l.reloadButton,
+              onPressed: _loadServices,
+              isBusy: _isLoading,
+            ),
+          ),
+          _ViewState.content => RefreshIndicator(
+            onRefresh: _loadServices,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(12),
+              itemCount: _filteredOrders.length,
+              itemBuilder: (context, index) {
+                final child = _ServiceOrderCard(
+                  order: _filteredOrders[index],
+                  colorScheme: colorScheme,
+                  startLabel: l.startButton,
+                  endLabel: l.endButton,
+                  onStart: () => _onStartOrder(_filteredOrders[index]),
+                  onEnd: () => _onEndOrder(_filteredOrders[index]),
+                );
 
-    return RefreshIndicator(
-      onRefresh: _loadServices,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: _filteredOrders.length,
-        itemBuilder: (context, index) {
-          final child = _ServiceOrderCard(
-            order: _filteredOrders[index],
-            colorScheme: colorScheme,
-            startLabel: l.startButton,
-            endLabel: l.endButton,
-            onStart: () => _onStartOrder(_filteredOrders[index]),
-            onEnd: () => _onEndOrder(_filteredOrders[index]),
-          );
+                final disableAnimations =
+                    MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+                if (disableAnimations) return child;
 
-          final disableAnimations = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-          if (disableAnimations) return child;
-
-          // Subtle staggered entrance (fade + slide) for a production feel.
-          final delayMs = (index.clamp(0, 8)) * 35;
-          return TweenAnimationBuilder<double>(
-            key: ValueKey('order_${_filteredOrders[index].sOSubId}_${_filteredOrders[index].trackerStatus}'),
-            tween: Tween(begin: 0, end: 1),
-            duration: Duration(milliseconds: 320 + delayMs),
-            curve: Curves.easeOutCubic,
-            builder: (context, t, _) {
-              final y = (1 - t) * 10;
-              return Opacity(
-                opacity: t,
-                child: Transform.translate(offset: Offset(0, y), child: child),
-              );
-            },
-          );
+                // Subtle staggered entrance (fade + slide) for a production feel.
+                final delayMs = (index.clamp(0, 8)) * 35;
+                return TweenAnimationBuilder<double>(
+                  key: ValueKey(
+                    'order_${_filteredOrders[index].sOSubId}_${_filteredOrders[index].trackerStatus}',
+                  ),
+                  tween: Tween(begin: 0, end: 1),
+                  duration: Duration(milliseconds: 320 + delayMs),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, t, _) {
+                    final y = (1 - t) * 10;
+                    return Opacity(
+                      opacity: t,
+                      child: Transform.translate(
+                        offset: Offset(0, y),
+                        child: child,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
         },
       ),
     );
@@ -331,7 +373,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
             children: [
               Text(
                 l.searchTitle,
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(
+                  ctx,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 10),
               TextField(
@@ -374,7 +418,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
                         foregroundColor: cs.onSurface,
                         side: BorderSide(color: cs.outlineVariant),
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                       child: Text(l.clearButton),
                     ),
@@ -385,7 +431,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
                       onPressed: () => Navigator.pop(ctx),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                       child: Text(l.okButton),
                     ),
@@ -409,33 +457,37 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     final startMeter = order.maxKM ?? 0;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l.confirmStartTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('${l.referenceLabel}: ${order.localRef ?? order.sONo}'),
-            const SizedBox(height: 4),
-            Text('${l.serviceTypeLabel}: ${order.transName ?? "-"}'),
-            const SizedBox(height: 8),
-            Text('${l.startMeterLabel}: $startMeter ${l.kmLabel}', style: Theme.of(context).textTheme.titleSmall),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l.cancelButton),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l.confirmStartTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${l.referenceLabel}: ${order.localRef ?? order.sONo}'),
+                const SizedBox(height: 4),
+                Text('${l.serviceTypeLabel}: ${order.transName ?? "-"}'),
+                const SizedBox(height: 8),
+                Text(
+                  '${l.startMeterLabel}: $startMeter ${l.kmLabel}',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l.cancelButton),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _submitStart(order, startMeter);
+                },
+                child: Text(l.startButton),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _submitStart(order, startMeter);
-            },
-            child: Text(l.startButton),
-          ),
-        ],
-      ),
     );
   }
 
@@ -443,7 +495,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     final l = AppLocalizations.of(context)!;
     final repId = _repId;
     if (repId == null || repId == 0) {
-      messengerKey.currentState?.showSnackBar(SnackBar(content: Text(l.repIdMissing)));
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(l.repIdMissing)),
+      );
       return;
     }
     try {
@@ -455,7 +509,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
         endMeter: 0,
       );
       if (!mounted) return;
-      messengerKey.currentState?.showSnackBar(SnackBar(content: Text(l.serviceStarted)));
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(l.serviceStarted)),
+      );
       await _loadServices();
     } catch (e) {
       if (!mounted) return;
@@ -473,37 +529,38 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l.endMeterTitle),
-        content: _MeterDialog(
-          key: key,
-          startMeter: startMeter,
-          controller: controller,
-          isEnd: true,
-          l10n: l,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(l.cancelButton),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l.endMeterTitle),
+            content: _MeterDialog(
+              key: key,
+              startMeter: startMeter,
+              controller: controller,
+              isEnd: true,
+              l10n: l,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l.cancelButton),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final state = key.currentState;
+                  if (state == null) return;
+                  final meter = int.tryParse(controller.text.trim());
+                  final err = state.validateEnd(meter);
+                  if (err != null) {
+                    state.setError(err);
+                    return;
+                  }
+                  Navigator.pop(ctx);
+                  _submitEnd(order, meter!);
+                },
+                child: Text(l.endButton),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () {
-              final state = key.currentState;
-              if (state == null) return;
-              final meter = int.tryParse(controller.text.trim());
-              final err = state.validateEnd(meter);
-              if (err != null) {
-                state.setError(err);
-                return;
-              }
-              Navigator.pop(ctx);
-              _submitEnd(order, meter!);
-            },
-            child: Text(l.endButton),
-          ),
-        ],
-      ),
     );
   }
 
@@ -511,7 +568,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     final l = AppLocalizations.of(context)!;
     final repId = _repId;
     if (repId == null || repId == 0) {
-      messengerKey.currentState?.showSnackBar(SnackBar(content: Text(l.repIdMissing)));
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(l.repIdMissing)),
+      );
       return;
     }
     try {
@@ -523,7 +582,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
         endMeter: meter,
       );
       if (!mounted) return;
-      messengerKey.currentState?.showSnackBar(SnackBar(content: Text(l.serviceEnded)));
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(l.serviceEnded)),
+      );
       await _loadServices();
     } catch (e) {
       if (!mounted) return;
@@ -643,11 +704,14 @@ class _ServiceOrderCard extends StatelessWidget {
     }
   }
 
-  ({Color accent, Color accentAlt, Color container, Color onContainer, IconData icon}) _statusPalette(
-    ColorScheme cs,
-    Brightness brightness,
-    int status,
-  ) {
+  ({
+    Color accent,
+    Color accentAlt,
+    Color container,
+    Color onContainer,
+    IconData icon,
+  })
+  _statusPalette(ColorScheme cs, Brightness brightness, int status) {
     final isDark = brightness == Brightness.dark;
     switch (status) {
       case 1:
@@ -663,7 +727,8 @@ class _ServiceOrderCard extends StatelessWidget {
           accent: isDark ? const Color(0xFF43A047) : const Color(0xFF2E7D32),
           accentAlt: isDark ? const Color(0xFF66BB6A) : const Color(0xFF43A047),
           container: isDark ? const Color(0xFF16361C) : const Color(0xFFE8F5E9),
-          onContainer: isDark ? const Color(0xFFB7F0C2) : const Color(0xFF1B5E20),
+          onContainer:
+              isDark ? const Color(0xFFB7F0C2) : const Color(0xFF1B5E20),
           icon: Icons.check_circle_rounded,
         );
       case 0:
@@ -718,14 +783,19 @@ class _ServiceOrderCard extends StatelessWidget {
                   palette.accentAlt.withValues(alpha: isDark ? 0.08 : 0.04),
                 ],
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             child: Row(
               children: [
                 // Status badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
@@ -761,18 +831,28 @@ class _ServiceOrderCard extends StatelessWidget {
                 const Spacer(),
                 // Time / date
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.6 : 0.7),
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: isDark ? 0.6 : 0.7,
+                    ),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.access_time_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 5),
                       Text(
-                        (order.pickupTime != null && order.pickupTime!.isNotEmpty)
+                        (order.pickupTime != null &&
+                                order.pickupTime!.isNotEmpty)
                             ? order.pickupTime!
                             : order.sODate,
                         style: theme.textTheme.labelMedium?.copyWith(
@@ -799,7 +879,9 @@ class _ServiceOrderCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: palette.accent.withValues(alpha: isDark ? 0.15 : 0.1),
+                        color: palette.accent.withValues(
+                          alpha: isDark ? 0.15 : 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
@@ -822,7 +904,8 @@ class _ServiceOrderCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (order.localRef != null && order.localRef!.isNotEmpty)
+                          if (order.localRef != null &&
+                              order.localRef!.isNotEmpty)
                             Text(
                               order.localRef!,
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -912,15 +995,27 @@ class _ServiceOrderCard extends StatelessWidget {
               ),
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               child: Align(
-                alignment: localeIsArabic ? Alignment.centerLeft : Alignment.centerRight,
+                alignment:
+                    localeIsArabic
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
                 child: FilledButton(
                   onPressed: btnAction,
                   style: FilledButton.styleFrom(
                     backgroundColor: palette.accent,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 12,
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     elevation: 2,
                     shadowColor: palette.accent.withValues(alpha: 0.4),
                   ),
@@ -928,7 +1023,9 @@ class _ServiceOrderCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        status == 1 ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded,
+                        status == 1
+                            ? Icons.stop_circle_rounded
+                            : Icons.play_circle_fill_rounded,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -998,22 +1095,31 @@ class _InfoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasAccent = accentColor != null;
-    final bg = hasAccent
-        ? accentColor!.withValues(alpha: isDark ? 0.15 : 0.08)
-        : colorScheme.surfaceContainerHighest.withValues(alpha: isDark ? 0.6 : 0.7);
+    final bg =
+        hasAccent
+            ? accentColor!.withValues(alpha: isDark ? 0.15 : 0.08)
+            : colorScheme.surfaceContainerHighest.withValues(
+              alpha: isDark ? 0.6 : 0.7,
+            );
     final fg = hasAccent ? accentColor! : colorScheme.onSurfaceVariant;
-    final textColor = hasAccent
-        ? (isDark ? accentColor! : accentColor!.withValues(alpha: 0.85))
-        : colorScheme.onSurfaceVariant;
+    final textColor =
+        hasAccent
+            ? (isDark ? accentColor! : accentColor!.withValues(alpha: 0.85))
+            : colorScheme.onSurfaceVariant;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(10),
-        border: hasAccent
-            ? Border.all(color: accentColor!.withValues(alpha: isDark ? 0.3 : 0.2))
-            : Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.25)),
+        border:
+            hasAccent
+                ? Border.all(
+                  color: accentColor!.withValues(alpha: isDark ? 0.3 : 0.2),
+                )
+                : Border.all(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+                ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1029,6 +1135,136 @@ class _InfoChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Reusable empty/error placeholder. Composes an icon, title, optional
+/// subtitle and an optional action button. The button can show an inline
+/// busy indicator and is automatically disabled when [isBusy] is true so that
+/// rapid taps cannot fire concurrent requests.
+class _StatePlaceholder extends StatelessWidget {
+  final IconData icon;
+  final Color? iconColor;
+  final String title;
+  final String? subtitle;
+  final String? buttonLabel;
+  final IconData buttonIcon;
+  final VoidCallback? onPressed;
+  final bool isBusy;
+
+  const _StatePlaceholder({
+    required this.icon,
+    this.iconColor,
+    required this.title,
+    this.subtitle,
+    this.buttonLabel,
+    this.buttonIcon = Icons.refresh_rounded,
+    this.onPressed,
+    this.isBusy = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final accent = iconColor ?? cs.primary;
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: accent.withValues(alpha: isDark ? 0.14 : 0.09),
+              border: Border.all(
+                color: accent.withValues(alpha: isDark ? 0.28 : 0.18),
+              ),
+            ),
+            child: Icon(icon, size: 56, color: accent),
+          ),
+          const SizedBox(height: 22),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: cs.onSurface,
+            ),
+          ),
+          if (subtitle != null && subtitle!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                height: 1.45,
+              ),
+            ),
+          ],
+          if (buttonLabel != null) ...[
+            const SizedBox(height: 22),
+            FilledButton.icon(
+              onPressed: isBusy ? null : onPressed,
+              icon: isBusy
+                  ? SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: cs.onPrimary,
+                      ),
+                    )
+                  : Icon(buttonIcon, size: 20),
+              label: Text(buttonLabel!),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Wraps a placeholder so it lives inside a scrollable, enabling
+/// pull-to-refresh on empty/error states with no list to scroll.
+class _ScrollablePlaceholder extends StatelessWidget {
+  final Widget child;
+  final Future<void> Function() onRefresh;
+
+  const _ScrollablePlaceholder({required this.child, required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(child: child),
+            ),
+          );
+        },
       ),
     );
   }

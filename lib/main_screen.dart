@@ -156,7 +156,7 @@ class _MainScreenState extends State<MainScreen> {
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const ServicesListScreen()));
                   },
-                  child: const Text('قائمة التشغيلات'),
+                  child: Text(AppLocalizations.of(context)!.servicesListTitle),
                 ),
                 FilledButton.tonal(
                   onPressed: () async {
@@ -224,10 +224,10 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('SerbTracker Client'),
+        title: Text(AppLocalizations.of(context)!.appName),
         actions: [
           IconButton(
-            tooltip: 'Logout',
+            tooltip: AppLocalizations.of(context)!.logoutTooltip,
             icon: const Icon(Icons.logout),
             onPressed: _logout,
           ),
