@@ -38,6 +38,7 @@
   "startAction": "Start service",
   "stopAction": "Stop service",
   "sosAction": "Send SOS",
+  "disclosureMessage": "This app collects location and activity data in the background and sends it to the configured server.",
   "sosSentSuccess": "Emergency signal sent",
   "loginTitle": "Sign in",
   "loginSubtitle": "Enter your credentials to access the app",

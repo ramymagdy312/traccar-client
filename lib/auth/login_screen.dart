@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final repId = token.repId ?? token.userId;
       if (repId != null) {
         await Preferences.instance.setString(Preferences.id, repId.toString());
-        await bg.BackgroundGeolocation.setConfig(Preferences.geolocationConfig());
+        await bg.BackgroundGeolocation.setConfig(Preferences.geolocationConfig(true));
       }
       final username = token.userName;
       if (username != null && username.isNotEmpty) {

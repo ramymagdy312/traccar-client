@@ -1,11 +1,6 @@
 package com.hoppataxi.serbtrackerclient
 
-import android.app.Application
-import org.slf4j.LoggerFactory
+import io.flutter.app.FlutterApplication
 
-class MainApplication : Application() {
-    override fun onCreate() {
-        LoggerFactory.getILoggerFactory()
-        super.onCreate()
-    }
+class MainApplication : FlutterApplication() {
 }

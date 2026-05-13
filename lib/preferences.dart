@@ -81,13 +81,14 @@ class Preferences {
     }
   }
 
-  static bg.Config geolocationConfig() {
+  static bg.Config geolocationConfig(bool reset) {
     final isHighestAccuracy = instance.getString(accuracy) == 'highest';
     final locationUpdateInterval = (instance.getInt(interval) ?? 0) * 1000;
     final fastestLocationUpdateInterval =
         (instance.getInt(fastestInterval) ?? 30) * 1000;
     final heartbeatInterval = instance.getInt(heartbeat) ?? 0;
     return bg.Config(
+      reset: reset,
       isMoving: true,
       geolocation: bg.GeoConfig(
         desiredAccuracy: switch (instance.getString(accuracy)) {
@@ -124,7 +125,7 @@ class Preferences {
       app: bg.AppConfig(
         enableHeadless: Platform.isAndroid ? true : null,
         stopOnTerminate: false,
-        startOnBoot: Platform.isAndroid ? true : null,
+        startOnBoot: true,
         heartbeatInterval:
             heartbeatInterval > 0 ? heartbeatInterval.toDouble() : null,
         preventSuspend: Platform.isIOS ? (heartbeatInterval > 0) : null,

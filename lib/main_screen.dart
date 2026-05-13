@@ -1,4 +1,5 @@
 import 'package:app_settings/app_settings.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:serb_tracker_client/main.dart';
@@ -107,6 +108,13 @@ class _MainScreenState extends State<MainScreen> {
               title: Text(AppLocalizations.of(context)!.idLabel),
               subtitle: Text(Preferences.instance.getString(Preferences.id) ?? ''),
             ),
+            if (Platform.isAndroid) ...[
+              Text(
+                AppLocalizations.of(context)!.disclosureMessage,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+            ],
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(AppLocalizations.of(context)!.trackingLabel),
