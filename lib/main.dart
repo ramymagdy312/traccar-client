@@ -18,7 +18,6 @@ import 'package:serb_tracker_client/quick_actions.dart';
 import 'api/dio_client.dart';
 import 'auth/auth_storage.dart';
 import 'auth/session_manager.dart';
-import 'firebase_options.dart';
 import 'l10n/app_localizations.dart';
 import 'auth/auth_gate.dart';
 import 'preferences.dart';

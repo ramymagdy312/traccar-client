@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>دليل استخدام SerbTracker Client</title>
+  <style>
+    :root {
+      --bg: #f7faf9;
+      --card: #fff;
+      --text: #1a2e2f;
+      --muted: #5a6d6f;
+      --accent: #0d7377;
+      --border: #e0eaea;
+      --slot-bg: #eef4f4;
+      --slot-border: #0d7377aa;
+      --maxw: 52rem;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0 1rem 3rem;
+      font-family: "Segoe UI", Tahoma, "Arabic UI Text", "Dubai", "Noto Sans Arabic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 1.05rem;
+    }
+    .doc {
+      max-width: var(--maxw);
+      margin: 0 auto;
+    }
+    header.doc-head {
+      padding: 2rem 0 1.25rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.75rem;
+    }
+    header.doc-head h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.75rem;
+      color: var(--accent);
+    }
+    header.doc-head .lead { margin: 0; color: var(--muted); }
+    .note {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      margin: 1.25rem 0;
+      border-right: 4px solid var(--accent);
+    }
+    .note strong { color: var(--accent); }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.35rem 1.4rem;
+      margin-bottom: 1.25rem;
+    }
+    section h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.25rem;
+      color: var(--accent);
+    }
+    section h3 {
+      margin: 1.1rem 0 0.45rem;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    ul { margin: 0.4rem 0 0.6rem; padding-right: 1.35rem; }
+    li { margin: 0.25rem 0; }
+    hr.sep {
+      border: none;
+      border-top: 1px dashed var(--border);
+      margin: 1.5rem 0;
+    }
+    /* مكان لقطة الشاشة */
+    figure.screenshot {
+      margin: 1rem 0 0.25rem;
+      padding: 0;
+    }
+    figure.screenshot .frame {
+      display: block;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--slot-bg);
+      min-height: 180px;
+      position: relative;
+    }
+    figure.screenshot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      vertical-align: middle;
+    }
+    /* إطار واضح عندما لا تُحمّل الصورة */
+    figure.screenshot img:not([src]),
+    figure.screenshot img[src=""] {
+      display: none;
+    }
+    figure.screenshot .placeholder {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    figure.screenshot .placeholder code {
+      display: inline-block;
+      margin-top: 0.5rem;
+      background: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      direction: ltr;
+      unicode-bidi: embed;
+    }
+    figcaption {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    footer.doc-foot {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    @media print {
+      body { background: #fff; }
+      section { break-inside: avoid; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="doc">
+    <header class="doc-head">
+      <h1>دليل استخدام تطبيق SerbTracker Client</h1>
+      <p class="lead">دليل للمستخدم النهائي مع أماكن جاهزة لإضافة لقطات شاشة. النسخة الإنجليزية: <a href="USER_GUIDE_EN.html" dir="ltr">USER_GUIDE_EN.html</a></p>
+    </header>
+
+    <div class="note">
+      <strong>كيف تضيف الصور:</strong>
+      احفظ الصور في المجلد <code dir="ltr" style="font-size: 0.9em;">docs/screenshots/</code>
+      وبنفس الأسماء المكتوب أسفل كل إطار (أو عدّل المسار في الملف لهذا الاسم).
+      قائمة مقترحة للأسماء موجودة في <code dir="ltr" style="font-size: 0.9em;">docs/screenshots/README.txt</code>.
+    </div>
+
+    <section id="s1">
+      <h2>1) ما وظيفة التطبيق؟</h2>
+      <p>يساعد التطبيق السائق أو المندوب على:</p>
+      <ul>
+        <li>تسجيل الدخول بحسابه.</li>
+        <li>متابعة أوامر الخدمة اليومية.</li>
+        <li>بدء وإنهاء كل خدمة مع التحقق من قراءة العداد.</li>
+        <li>تشغيل التتبع وإرسال الموقع الحالي.</li>
+        <li>تعديل إعدادات التطبيق والتتبع.</li>
+      </ul>
+    </section>
+
+    <section id="s2">
+      <h2>2) أول تشغيل — تسجيل الدخول</h2>
+      <ol>
+        <li>تظهر شاشة <strong>تسجيل الدخول</strong>.</li>
+        <li>أدخل اسم المستخدم وكلمة المرور.</li>
+        <li>اضغط زر تسجيل الدخول.</li>
+        <li>بعد النجاح تنتقل تلقائياً إلى الشاشة الرئيسية.</li>
+      </ol>
+      <p>التطبيق يحفظ الجلسة؛ غالباً لن تحتاج لإعادة الدخول في كل مرة إلا بعد تسجيل الخروج.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <!-- ضع مسار الصورة؛ عند حذف src يظهر التلميح -->
+          <img src="screenshots/02-login.png" alt="شاشة تسجيل الدخول">
+          <div class="placeholder">أضف لقطة شاشة هنا<br><code>docs/screenshots/02-login.png</code></div>
+        </div>
+        <figcaption>مثال: شاشة تسجيل الدخول.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s3">
+      <h2>3) الشاشة الرئيسية بعد الدخول</h2>
+      <ul>
+        <li><strong>شريط علوي:</strong> ترحيب، اسم المستخدم، زر تسجيل الخروج.</li>
+        <li><strong>شريط سفلي (3 تبويبات):</strong> الخدمات — التتبع — الإعدادات.</li>
+      </ul>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/03-home-header-tabs.png" alt="الشريط العلوي والتبويبات السفلية">
+          <div class="placeholder">أضف لقطة الشاشة<br><code>docs/screenshots/03-home-header-tabs.png</code></div>
+        </div>
+        <figcaption>الواجهة الرئيسية: الهيدر والتبويبات.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s4">
+      <h2>4) شاشة الخدمات (Services)</h2>
+      <p>أهم شاشة للعمل اليومي.</p>
+
+      <h3>العنوان والبحث</h3>
+      <p>زر البحث يفتح ورقة بحث؛ يمكنك البحث برقم الطلب، العميل، المرجع، السيارة، أو نوع الخدمة.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/04-services-list.png" alt="قائمة الخدمات">
+          <div class="placeholder"><code>docs/screenshots/04-services-list.png</code></div>
+        </div>
+        <figcaption>قائمة الخدمات الرئيسية.</figcaption>
+      </figure>
+      
+
+      <h3>الفلاتر</h3>
+      <p>الكل، لم يبدأ، جاري التنفيذ، مكتمل — مع عداد لكل فلتر.</p>
+     
+
+      <h3>بطاقة الخدمة وزر البدء / الإنهاء</h3>
+      <ul>
+        <li>لم يبدأ → زر <strong>بدء</strong>.</li>
+        <li>جاري التنفيذ → زر <strong>إنهاء</strong>.</li>
+        <li>مكتمل → لا يظهر زر إجراء.</li>
+      </ul>
+      <p>في الواجهة العربية يميل زر الإجراء لليسار؛ في الإنجليزية لليمين.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/07-service-card-detail.png" alt="كارت تشغيلة مع التفاصيل">
+          <div class="placeholder"><code>docs/screenshots/07-service-card-detail.png</code></div>
+        </div>
+        <figcaption>مثال على بطاقة خدمة.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s5">
+      <h2>5) بدء أمر خدمة</h2>
+      <ol>
+        <li>اضغط <strong>بدء</strong>.</li>
+        <li>نافذة التأكيد تعرض المرجع، نوع الخدمة، وعداد البداية.</li>
+        <li>أكّد بالضغط على بدء.</li>
+      </ol>
+      <p>بعد النجاح تصبح الحالة «جاري التنفيذ» وتظهر رسالة نجاح.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/08-start-confirm-dialog.png" alt="تأكيد بدء الخدمة">
+          <div class="placeholder"><code>docs/screenshots/08-start-confirm-dialog.png</code></div>
+        </div>
+        <figcaption>حوار تأكيد البدء.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s6">
+      <h2>6) إنهاء أمر خدمة</h2>
+      <ol>
+        <li>اضغط <strong>إنهاء</strong>.</li>
+        <li>أدخل عداد النهاية.</li>
+        <li>التطبيق يتحقق: رقم صحيح، النهاية ≥ البداية، والفرق ضمن الحد المسموح (مثل حد كبير بالكيلومترات).</li>
+      </ol>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/09-end-meter-dialog.png" alt="إدخال عداد النهاية">
+          <div class="placeholder"><code>docs/screenshots/09-end-meter-dialog.png</code></div>
+        </div>
+        <figcaption>حوار عداد النهاية.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s7">
+      <h2>7) شاشة التتبع (Tracking)</h2>
+      <ul>
+        <li>تشغيل أو إيقاف التتبع المستمر.</li>
+        <li>إرسال الموقع الحالي يدوياً.</li>
+        <li>فتح شاشة السجلات (الحالة).</li>
+        <li>إرسال إشارة طوارئ <strong>SOS</strong> عند الحاجة.</li>
+      </ul>
+      <p>قد يطلب التطبيق صلاحيات الموقع أو تعديل إعدادات البطارية حسب الجهاز.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/10-tracking.png" alt="شاشة التتبع">
+          <div class="placeholder"><code>docs/screenshots/10-tracking.png</code></div>
+        </div>
+        <figcaption>شاشة التتبع.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s9">
+      <h2>9) شاشة الإعدادات (Settings)</h2>
+
+      <h3>عام</h3>
+      <p>اللغة، المظهر (فاتح / داكن / النظام)، نسخة التطبيق، تسجيل الخروج.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/12-settings-general.png" alt="إعدادات عامة">
+          <div class="placeholder"><code>docs/screenshots/12-settings-general.png</code></div>
+        </div>
+        <figcaption>قسم الإعدادات العامة.</figcaption>
+      </figure>
+
+      <h3>الموقع والمتقدم</h3>
+      <p>دقة الموقع، المسافة، الفواصل الزمنية، Heartbeat، وخيارات متقدمة (مثل التخزين المؤقت وغيرها). التعديلات تُطبَّق على خدمة التتبع.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/13-settings-location.png" alt="إعدادات الموقع والمتقدم">
+          <div class="placeholder"><code>docs/screenshots/13-settings-location.png</code></div>
+        </div>
+        <figcaption>إعدادات الموقع / المتقدم.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s10">
+      <h2>10) تسجيل الخروج</h2>
+      <p>من أيقونة الخروج في الشريط العلوي أو من الإعدادات. بعد التأكيد: إيقاف التتبع، مسح الجلسة، والعودة لشاشة الدخول.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/14-logout-dialog.png" alt="تأكيد تسجيل الخروج">
+          <div class="placeholder"><code>docs/screenshots/14-logout-dialog.png</code> (اختياري)</div>
+        </div>
+        <figcaption>يمكن إضافة لقطة لحوار تأكيد الخروج إن أردت.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s11">
+      <h2>11) مشاكل شائعة</h2>
+      <ul>
+        <li><strong>لا تظهر الخدمات:</strong> تحقق من الشبكة والحساس، وحاول التحديث/إعادة المحاولة.</li>
+        <li><strong>فشل بدء أو إنهاء:</strong> راجع الرسالة؛ تأكد من صحة العداد.</li>
+        <li><strong>التتبع في الخلفية:</strong> صلاحيات الموقع واستثناء البطارية.</li>
+        <li><strong>اللغة/المظهر:</strong> أعد فتح الشاشة وتأكد من حفظ الاختيار.</li>
+      </ul>
+    </section>
+
+    <section id="s12">
+      <h2>12) workflow يومي مقترح</h2>
+      <ol>
+        <li>تأكد من تسجيل الدخول.</li>
+        <li>راجع الخدمات والفلاتر.</li>
+        <li>ابدأ الخدمة عند التنفيذ الفعلي.</li>
+        <li>أنهِها مباشرة مع عداد صحيح.</li>
+        <li>استخدم التتبع لإرسال الموقع عند الحاجة.</li>
+        <li>سجّل الخروج نهاية الوردية.</li>
+      </ol>
+    </section>
+
+    <hr class="sep">
+
+    <section id="s13">
+      <h2>13) سكربت شرح سريع (3–5 دقائق)</h2>
+      <ol>
+        <li>«هذه شاشة الدخول؛ ندخل اسم المستخدم وكلمة المرور.»</li>
+        <li>«بعد الدخول نصل للشاشة الرئيسية بثلاث تبويبات.»</li>
+        <li>«في الخدمات: بحث وفلاتر وبطاقات التشغيلات.»</li>
+        <li>«بدء للجديدة، إنهاء للجارية.»</li>
+        <li>«في التتبع: تشغيل التتبع، إرسال موقع، سجلات، وSOS.»</li>
+        <li>«من الإعدادات: اللغة والمظهر وإعدادات التتبع.»</li>
+        <li>«تسجيل الخروج من الأعلى أو الإعدادات.»</li>
+      </ol>
+    </section>
+
+    <footer class="doc-foot">
+      <p>SerbTracker Client — دليل المستخدم. لتحديث الصور فقط انسخ الملفات إلى <code dir="ltr">docs/screenshots/</code> دون تغيير الأسماء المذكورة أعلاه، أو عدّل مسارات <code dir="ltr">src</code> في هذا الملف.</p>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      document.querySelectorAll('figure.screenshot img').forEach(function (img) {
+        var ph = img.nextElementSibling;
+        if (!ph || !ph.classList.contains('placeholder')) return;
+        function sync() {
+          if (img.complete && img.naturalWidth > 0) {
+            ph.style.display = 'none';
+          } else {
+            ph.style.display = '';
+          }
+        }
+        img.addEventListener('load', function () {
+          img.style.display = '';
+          ph.style.display = 'none';
+        });
+        img.addEventListener('error', function () {
+          img.style.display = 'none';
+          ph.style.display = '';
+        });
+        sync();
+      });
+    })();
+  </script>
+</body>
+</html>

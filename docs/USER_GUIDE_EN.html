@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SerbTracker Client — User Guide</title>
+  <style>
+    :root {
+      --bg: #f7faf9;
+      --card: #fff;
+      --text: #1a2e2f;
+      --muted: #5a6d6f;
+      --accent: #0d7377;
+      --border: #e0eaea;
+      --slot-bg: #eef4f4;
+      --slot-border: #0d7377aa;
+      --maxw: 52rem;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0 1rem 3rem;
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 1.05rem;
+    }
+    .doc {
+      max-width: var(--maxw);
+      margin: 0 auto;
+    }
+    header.doc-head {
+      padding: 2rem 0 1.25rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.75rem;
+    }
+    header.doc-head h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.75rem;
+      color: var(--accent);
+    }
+    header.doc-head .lead { margin: 0; color: var(--muted); }
+    .note {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      margin: 1.25rem 0;
+      border-left: 4px solid var(--accent);
+    }
+    .note strong { color: var(--accent); }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.35rem 1.4rem;
+      margin-bottom: 1.25rem;
+    }
+    section h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.25rem;
+      color: var(--accent);
+    }
+    section h3 {
+      margin: 1.1rem 0 0.45rem;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+    ul { margin: 0.4rem 0 0.6rem; padding-left: 1.35rem; }
+    ol { margin: 0.4rem 0 0.6rem; padding-left: 1.35rem; }
+    li { margin: 0.25rem 0; }
+    hr.sep {
+      border: none;
+      border-top: 1px dashed var(--border);
+      margin: 1.5rem 0;
+    }
+    figure.screenshot {
+      margin: 1rem 0 0.25rem;
+      padding: 0;
+    }
+    figure.screenshot .frame {
+      display: block;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--slot-bg);
+      min-height: 180px;
+      position: relative;
+    }
+    figure.screenshot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      vertical-align: middle;
+    }
+    figure.screenshot img:not([src]),
+    figure.screenshot img[src=""] {
+      display: none;
+    }
+    figure.screenshot .placeholder {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    figure.screenshot .placeholder code {
+      display: inline-block;
+      margin-top: 0.5rem;
+      background: #fff;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    figcaption {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    footer.doc-foot {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    @media print {
+      body { background: #fff; }
+      section { break-inside: avoid; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="doc">
+    <header class="doc-head">
+      <h1>SerbTracker Client — User Guide</h1>
+    </header>
+
+    <section id="s1">
+      <h2>1) What is this app for?</h2>
+      <p>The app helps the driver or field rep to:</p>
+      <ul>
+        <li>Sign in with their account.</li>
+        <li>View daily service orders.</li>
+        <li>Start and end each service with odometer validation.</li>
+        <li>Enable tracking and send the current location.</li>
+        <li>Change app and tracking settings.</li>
+      </ul>
+    </section>
+
+    <section id="s2">
+      <h2>2) First launch — Sign in</h2>
+      <ol>
+        <li>The <strong>Sign in</strong> screen appears.</li>
+        <li>Enter your username and password.</li>
+        <li>Tap the sign-in button.</li>
+        <li>After success you go to the main screen automatically.</li>
+      </ol>
+      <p>The app keeps your session; you usually will not need to sign in every time until you log out.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/02-login.png" alt="Login screen">
+          <div class="placeholder">Add screenshot here<br><code>docs/screenshots/02-login.png</code></div>
+        </div>
+        <figcaption>Example: login screen.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s3">
+      <h2>3) Main screen after sign-in</h2>
+      <ul>
+        <li><strong>Top bar:</strong> welcome, username, log out.</li>
+        <li><strong>Bottom bar (3 tabs):</strong> Services — Tracking — Settings.</li>
+      </ul>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/03-home-header-tabs.png" alt="Top bar and bottom tabs">
+          <div class="placeholder">Add screenshot<br><code>docs/screenshots/03-home-header-tabs.png</code></div>
+        </div>
+        <figcaption>Main UI: header and tabs.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s4">
+      <h2>4) Services screen</h2>
+      <p>Your main day-to-day screen.</p>
+
+      <h3>Title and search</h3>
+      <p>The search button opens a search sheet; you can search by order number, customer, reference, vehicle, or service type.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/04-services-list.png" alt="Services list">
+          <div class="placeholder"><code>docs/screenshots/04-services-list.png</code></div>
+        </div>
+        <figcaption>Main services list.</figcaption>
+      </figure>
+
+
+      <h3>Filters</h3>
+      <p>All, Not started, In progress, Completed — each with a count badge.</p>
+
+
+      <h3>Service card and Start / End</h3>
+      <ul>
+        <li>Not started → <strong>Start</strong> button.</li>
+        <li>In progress → <strong>End</strong> button.</li>
+        <li>Completed → no action button.</li>
+      </ul>
+      <p>In Arabic UI the action button leans left; in English it leans right.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/07-service-card-detail.png" alt="Service order card with details">
+          <div class="placeholder"><code>docs/screenshots/07-service-card-detail.png</code></div>
+        </div>
+        <figcaption>Example service card.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s5">
+      <h2>5) Starting a service</h2>
+      <ol>
+        <li>Tap <strong>Start</strong>.</li>
+        <li>The confirmation dialog shows reference, service type, and start odometer.</li>
+        <li>Tap <strong>Start</strong> again to confirm.</li>
+      </ol>
+      <p>After success the status becomes <strong>In progress</strong> and a success message appears.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/08-start-confirm-dialog.png" alt="Confirm start service">
+          <div class="placeholder"><code>docs/screenshots/08-start-confirm-dialog.png</code></div>
+        </div>
+        <figcaption>Start confirmation dialog.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s6">
+      <h2>6) Ending a service</h2>
+      <ol>
+        <li>Tap <strong>End</strong>.</li>
+        <li>Enter the end odometer.</li>
+        <li>The app checks: valid number, end ≥ start, and distance within the allowed limit (e.g. a large km cap).</li>
+      </ol>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/09-end-meter-dialog.png" alt="End odometer input">
+          <div class="placeholder"><code>docs/screenshots/09-end-meter-dialog.png</code></div>
+        </div>
+        <figcaption>End meter dialog.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s7">
+      <h2>7) Tracking screen</h2>
+      <ul>
+        <li>Turn continuous tracking on or off.</li>
+        <li>Send current location manually.</li>
+        <li>Open Logs / Status.</li>
+        <li>Send an <strong>SOS</strong> emergency signal when needed.</li>
+      </ul>
+      <p>The app may ask for location permission or battery settings depending on the device.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/10-tracking.png" alt="Tracking screen">
+          <div class="placeholder"><code>docs/screenshots/10-tracking.png</code></div>
+        </div>
+        <figcaption>Tracking screen.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s9">
+      <h2>9) Settings</h2>
+
+      <h3>General</h3>
+      <p>Language, appearance (light / dark / system), app version, log out.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/12-settings-general.png" alt="General settings">
+          <div class="placeholder"><code>docs/screenshots/12-settings-general.png</code></div>
+        </div>
+        <figcaption>General settings section.</figcaption>
+      </figure>
+
+      <h3>Location and advanced</h3>
+      <p>Accuracy, distance, intervals, heartbeat, and advanced options (e.g. offline buffering). Changes apply to the tracking service.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/13-settings-location.png" alt="Location and advanced settings">
+          <div class="placeholder"><code>docs/screenshots/13-settings-location.png</code></div>
+        </div>
+        <figcaption>Location / advanced settings.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s10">
+      <h2>10) Log out</h2>
+      <p>From the header icon or Settings. After confirmation: tracking stops, session clears, back to sign-in.</p>
+      <figure class="screenshot">
+        <div class="frame">
+          <img src="screenshots/14-logout-dialog.png" alt="Confirm log out">
+          <div class="placeholder"><code>docs/screenshots/14-logout-dialog.png</code> (optional)</div>
+        </div>
+        <figcaption>Optional screenshot of the log-out confirmation dialog.</figcaption>
+      </figure>
+    </section>
+
+    <section id="s11">
+      <h2>11) Common issues</h2>
+      <ul>
+        <li><strong>No services shown:</strong> check network and account; try refresh / retry.</li>
+        <li><strong>Start or end fails:</strong> read the message; verify odometer.</li>
+        <li><strong>Background tracking:</strong> location permission and battery optimisation.</li>
+        <li><strong>Language / theme:</strong> leave and reopen the screen; confirm the choice was saved.</li>
+      </ul>
+    </section>
+
+    <section id="s12">
+      <h2>12) Suggested daily workflow</h2>
+      <ol>
+        <li>Confirm you are signed in.</li>
+        <li>Review services and filters.</li>
+        <li>Start a service when work actually begins.</li>
+        <li>End it right away with a correct odometer.</li>
+        <li>Use Tracking to send location when needed.</li>
+        <li>Log out at end of shift.</li>
+      </ol>
+    </section>
+
+    <hr class="sep">
+
+    <section id="s13">
+      <h2>13) Quick demo script (3–5 minutes)</h2>
+      <ol>
+        <li>“This is sign-in — enter username and password.”</li>
+        <li>“After login we get the main screen with three tabs.”</li>
+        <li>“On Services: search, filters, and order cards.”</li>
+        <li>“Start for new orders, End for in-progress ones.”</li>
+        <li>“On Tracking: toggle tracking, send location, logs, SOS.”</li>
+        <li>“In Settings: language, theme, tracking options.”</li>
+        <li>“Log out from the top or Settings.”</li>
+      </ol>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      document.querySelectorAll('figure.screenshot img').forEach(function (img) {
+        var ph = img.nextElementSibling;
+        if (!ph || !ph.classList.contains('placeholder')) return;
+        function sync() {
+          if (img.complete && img.naturalWidth > 0) {
+            ph.style.display = 'none';
+          } else {
+            ph.style.display = '';
+          }
+        }
+        img.addEventListener('load', function () {
+          img.style.display = '';
+          ph.style.display = 'none';
+        });
+        img.addEventListener('error', function () {
+          img.style.display = 'none';
+          ph.style.display = '';
+        });
+        sync();
+      });
+    })();
+  </script>
+</body>
+</html>
