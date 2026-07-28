@@ -75,13 +75,16 @@
   "searchHint": "رقم التشغيل، العميل، المرجع، السيارة، النوع",
   "clearButton": "مسح",
   "confirmStartTitle": "تأكيد بدء التشغيل",
+  "confirmEndTitle": "تأكيد إنهاء التشغيل",
   "referenceLabel": "المرجع",
   "serviceTypeLabel": "نوع الخدمة",
   "startMeterLabel": "عداد البداية",
+  "startMeterTitle": "عداد بداية التشغيل",
   "startButton": "بدء",
   "endButton": "إنهاء",
   "endMeterTitle": "عداد نهاية التشغيل",
   "endMeterLabel": "عداد النهاية (كم)",
+  "startMeterInputLabel": "عداد البداية (كم)",
   "distanceKm": "المسافة: +{diff} كم",
   "@distanceKm": {
     "placeholders": {

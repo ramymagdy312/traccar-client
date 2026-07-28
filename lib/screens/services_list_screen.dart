@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:serb_tracker_client/geolocation_service.dart';
 import 'package:serb_tracker_client/main.dart';
 import 'package:serb_tracker_client/preferences.dart';
 
@@ -452,7 +453,27 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     return int.tryParse(s ?? '');
   }
 
+  /// RepMan can close without odometer input; Driver / empty roles must enter it.
+  bool get _isRepMan {
+    final raw = Preferences.instance.getString(Preferences.roles) ?? '';
+    if (raw.isEmpty) return false;
+    return raw
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .contains('repman');
+  }
+
+  bool get _requiresMeterInput => !_isRepMan;
+
   void _onStartOrder(ServiceOrder order) {
+    if (_requiresMeterInput) {
+      _showStartMeterDialog(order);
+    } else {
+      _showStartConfirmDialog(order);
+    }
+  }
+
+  void _showStartConfirmDialog(ServiceOrder order) {
     final l = AppLocalizations.of(context)!;
     final startMeter = order.maxKM ?? 0;
     showDialog(
@@ -491,6 +512,49 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     );
   }
 
+  void _showStartMeterDialog(ServiceOrder order) {
+    final l = AppLocalizations.of(context)!;
+    final suggested = order.maxKM ?? 0;
+    final controller = TextEditingController(text: '$suggested');
+    final key = GlobalKey<_MeterDialogState>();
+
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l.startMeterTitle),
+            content: _MeterDialog(
+              key: key,
+              startMeter: suggested,
+              controller: controller,
+              isEnd: false,
+              l10n: l,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l.cancelButton),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final state = key.currentState;
+                  if (state == null) return;
+                  final meter = int.tryParse(controller.text.trim());
+                  final err = state.validateStart(meter);
+                  if (err != null) {
+                    state.setError(err);
+                    return;
+                  }
+                  Navigator.pop(ctx);
+                  _submitStart(order, meter!);
+                },
+                child: Text(l.startButton),
+              ),
+            ],
+          ),
+    );
+  }
+
   void _submitStart(ServiceOrder order, int meter) async {
     final l = AppLocalizations.of(context)!;
     final repId = _repId;
@@ -501,12 +565,15 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       return;
     }
     try {
+      final coords = await GeolocationService.currentCoords();
       await _api.updateServiceStatus(
         repId: repId,
         sOSubId: order.sOSubId,
         status: 1,
         startMeter: meter,
         endMeter: 0,
+        lat: coords.lat,
+        lng: coords.lng,
       );
       if (!mounted) return;
       messengerKey.currentState?.showSnackBar(
@@ -522,6 +589,47 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
   }
 
   void _onEndOrder(ServiceOrder order) {
+    if (_requiresMeterInput) {
+      _showEndMeterDialog(order);
+    } else {
+      _showEndConfirmDialog(order);
+    }
+  }
+
+  void _showEndConfirmDialog(ServiceOrder order) {
+    final l = AppLocalizations.of(context)!;
+    showDialog(
+      context: context,
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l.confirmEndTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${l.referenceLabel}: ${order.localRef ?? order.sONo}'),
+                const SizedBox(height: 4),
+                Text('${l.serviceTypeLabel}: ${order.transName ?? "-"}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(l.cancelButton),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _submitEnd(order, 0);
+                },
+                child: Text(l.endButton),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showEndMeterDialog(ServiceOrder order) {
     final l = AppLocalizations.of(context)!;
     final startMeter = order.maxKM ?? 0;
     final controller = TextEditingController(text: '$startMeter');
@@ -574,12 +682,15 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       return;
     }
     try {
+      final coords = await GeolocationService.currentCoords();
       await _api.updateServiceStatus(
         repId: repId,
         sOSubId: order.sOSubId,
         status: 2,
         startMeter: 0,
         endMeter: meter,
+        lat: coords.lat,
+        lng: coords.lng,
       );
       if (!mounted) return;
       messengerKey.currentState?.showSnackBar(
@@ -621,6 +732,12 @@ class _MeterDialogState extends State<_MeterDialog> {
     setState(() => _error = msg);
   }
 
+  String? validateStart(int? meter) {
+    final l = widget.l10n;
+    if (meter == null || meter < 0) return l.enterValidNumber;
+    return null;
+  }
+
   String? validateEnd(int? meter) {
     final l = widget.l10n;
     if (meter == null) return l.enterValidNumber;
@@ -633,6 +750,27 @@ class _MeterDialogState extends State<_MeterDialog> {
   @override
   Widget build(BuildContext context) {
     final l = widget.l10n;
+    if (!widget.isEnd) {
+      return SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: widget.controller,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: l.startMeterInputLabel,
+                errorText: _error,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (_) => setState(() => _error = null),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,

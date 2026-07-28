@@ -60,6 +60,7 @@ class _HomeShellState extends State<HomeShell> {
     await const AuthStorage().clearAll();
     await DioClient.clearCookies();
     await Preferences.instance.remove(Preferences.username);
+    await Preferences.instance.remove(Preferences.roles);
     if (!mounted) return;
     await navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const AuthGate()),

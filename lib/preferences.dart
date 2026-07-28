@@ -11,6 +11,7 @@ class Preferences {
 
   static const String id = 'id';
   static const String username = 'username';
+  static const String roles = 'roles';
   static const String url = 'url';
   static const String accuracy = 'accuracy';
   static const String distance = 'distance';
@@ -49,6 +50,7 @@ class Preferences {
         allowList: {
           id,
           username,
+          roles,
           url,
           accuracy,
           distance,

@@ -58,6 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (username != null && username.isNotEmpty) {
         await Preferences.instance.setString(Preferences.username, username);
       }
+      await Preferences.instance.setString(
+        Preferences.roles,
+        token.roles.join(','),
+      );
       if (!mounted) return;
       final onSuccess = widget.onLoginSuccess;
       if (onSuccess != null) {

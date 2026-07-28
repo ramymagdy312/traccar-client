@@ -41,12 +41,16 @@ class FleetApi {
   /// [status] 1 = start, 2 = end.
   /// [startMeter] odometer at start (when status==1); use 0 when status==2.
   /// [endMeter] odometer at end (when status==2); use 0 when status==1.
+  /// [lat] current latitude.
+  /// [lng] current longitude.
   Future<void> updateServiceStatus({
     required int repId,
     required int sOSubId,
     required int status,
     required int startMeter,
     required int endMeter,
+    required double lat,
+    required double lng,
   }) async {
     final Response<dynamic> response;
     try {
@@ -58,6 +62,8 @@ class FleetApi {
           'Status': status,
           'StartMeter': startMeter,
           'EndMeter': endMeter,
+          'lat': lat,
+          'lng': lng,
         },
       );
     } on DioException catch (e) {

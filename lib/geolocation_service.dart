@@ -112,6 +112,26 @@ class GeolocationService {
   }
 
   static double _degToRad(double degree) => degree * pi / 180.0;
+
+  /// Returns the best available current coordinates (fresh GPS, then cache).
+  static Future<({double lat, double lng})> currentCoords() async {
+    try {
+      final location = await bg.BackgroundGeolocation.getCurrentPosition(
+        samples: 1,
+        persist: false,
+      );
+      return (lat: location.coords.latitude, lng: location.coords.longitude);
+    } catch (error) {
+      developer.log('Failed to get current position', error: error);
+    }
+
+    final cached = LocationCache.get();
+    if (cached != null) {
+      return (lat: cached.latitude, lng: cached.longitude);
+    }
+
+    return (lat: 0.0, lng: 0.0);
+  }
 }
 
 Future<void>? _firebaseInitialization;

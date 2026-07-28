@@ -58,8 +58,7 @@ class DioClient {
     final adapter = IOHttpClientAdapter();
     adapter.createHttpClient = () {
       final client = HttpClient();
-      client.badCertificateCallback =
-          (cert, host, port) => _trustedHosts.contains(host);
+      client.badCertificateCallback = (cert, host, port) => _trustedHosts.contains(host);
       return client;
     };
     dio.httpClientAdapter = adapter;

@@ -9,6 +9,7 @@ class AuthToken {
   final DateTime? issuedAt;
   final DateTime? expiresAt;
   final String? error;
+  final List<String> roles;
 
   AuthToken({
     required this.accessToken,
@@ -21,6 +22,7 @@ class AuthToken {
     this.issuedAt,
     this.expiresAt,
     this.error,
+    this.roles = const [],
   });
 
   factory AuthToken.fromJson(Map<String, dynamic> json) {
@@ -39,8 +41,22 @@ class AuthToken {
       issuedAt: DateTime.tryParse((json['issued'] as String?) ?? ''),
       expiresAt: DateTime.tryParse((json['expires'] as String?) ?? ''),
       error: json['Error'] as String?,
+      roles: _parseRoles(json['Roles'] ?? json['roles']),
     );
   }
+
+  static List<String> _parseRoles(dynamic raw) {
+    if (raw is! List) return const [];
+    return raw
+        .map((e) => e.toString().trim())
+        .where((e) => e.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  bool get isRepMan => roles.any((r) => r.toLowerCase() == 'repman');
+
+  /// Drivers (empty roles or explicit Driver) must enter odometer readings.
+  bool get requiresMeterInput => !isRepMan;
 
   bool get isValid =>
       accessToken.isNotEmpty && (error == null || error!.isEmpty);

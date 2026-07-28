@@ -162,12 +162,17 @@ class SessionManager {
     if (userName != null && userName.isNotEmpty) {
       await Preferences.instance.setString(Preferences.username, userName);
     }
+    await Preferences.instance.setString(
+      Preferences.roles,
+      token.roles.join(','),
+    );
   }
 
   static Future<void> _expireSessionAndRedirect() async {
     cancelScheduledRefresh();
     await _storage.clearAll();
     await Preferences.instance.remove(Preferences.username);
+    await Preferences.instance.remove(Preferences.roles);
     if (_isRedirecting) return;
     _isRedirecting = true;
     final ctx = navigatorKey.currentContext;

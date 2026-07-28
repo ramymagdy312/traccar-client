@@ -75,13 +75,16 @@
   "searchHint": "Order number, customer, reference, vehicle, type",
   "clearButton": "Clear",
   "confirmStartTitle": "Confirm start",
+  "confirmEndTitle": "Confirm end",
   "referenceLabel": "Reference",
   "serviceTypeLabel": "Service type",
   "startMeterLabel": "Start meter",
+  "startMeterTitle": "Start meter",
   "startButton": "Start",
   "endButton": "End",
   "endMeterTitle": "End meter",
   "endMeterLabel": "End meter (km)",
+  "startMeterInputLabel": "Start meter (km)",
   "distanceKm": "Distance: +{diff} km",
   "@distanceKm": {
     "placeholders": {
