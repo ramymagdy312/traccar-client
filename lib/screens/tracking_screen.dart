@@ -8,6 +8,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 
 import '../l10n/app_localizations.dart';
+import '../permissions/location_permission_service.dart';
 import '../status_screen.dart';
 
 class TrackingScreen extends StatefulWidget {
@@ -39,6 +40,128 @@ class _TrackingScreenState extends State<TrackingScreen> {
     bg.BackgroundGeolocation.onMotionChange((bg.Location location) {
       setState(() => isMoving = location.isMoving);
     });
+  }
+
+  /// Shows the prominent disclosure when needed and requests location
+  /// permissions. Returns `true` only when the SDK may be asked for location.
+  Future<bool> _ensureLocationAccess({required bool requireBackground}) async {
+    final l = AppLocalizations.of(context)!;
+    final result = await LocationPermissionService.ensureAccess(
+      context,
+      requireBackground: requireBackground,
+    );
+    if (!mounted) return false;
+    switch (result) {
+      case LocationAccessResult.granted:
+        return true;
+      case LocationAccessResult.foregroundOnly:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text(l.locationBackgroundLimitedMessage)),
+        );
+        return true;
+      case LocationAccessResult.denied:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(l.locationPermissionDeniedMessage),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: l.settingsTitle,
+              onPressed: () => AppSettings.openAppSettings(
+                type: AppSettingsType.settings,
+              ),
+            ),
+          ),
+        );
+        return false;
+      case LocationAccessResult.disclosureDeclined:
+        return false;
+    }
+  }
+
+  Future<void> _startTracking() async {
+    final l = AppLocalizations.of(context)!;
+    final access = await LocationPermissionService.ensureAccess(
+      context,
+      requireBackground: true,
+    );
+    if (!mounted) return;
+
+    switch (access) {
+      case LocationAccessResult.disclosureDeclined:
+        return;
+      case LocationAccessResult.denied:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(l.locationPermissionDeniedMessage),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: l.settingsTitle,
+              onPressed: () => AppSettings.openAppSettings(
+                type: AppSettingsType.settings,
+              ),
+            ),
+          ),
+        );
+        return;
+      case LocationAccessResult.foregroundOnly:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text(l.locationBackgroundLimitedMessage)),
+        );
+      case LocationAccessResult.granted:
+        break;
+    }
+
+    try {
+      FirebaseCrashlytics.instance.log('tracking_toggle_start');
+      await bg.BackgroundGeolocation.start();
+      if (mounted) _checkBatteryOptimizations(context);
+    } on PlatformException catch (error) {
+      final providerState = await bg.BackgroundGeolocation.providerState;
+      final isPermissionError =
+          providerState.status ==
+              bg.ProviderChangeEvent.AUTHORIZATION_STATUS_DENIED ||
+          providerState.status ==
+              bg.ProviderChangeEvent.AUTHORIZATION_STATUS_RESTRICTED;
+      if (!mounted) return;
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(error.message ?? error.code),
+          duration: const Duration(seconds: 4),
+          action: isPermissionError
+              ? SnackBarAction(
+                  label: l.settingsTitle,
+                  onPressed: () => AppSettings.openAppSettings(
+                    type: AppSettingsType.settings,
+                  ),
+                )
+              : null,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  /// Requests a single location fix. Returns `true` when it was recorded.
+  Future<bool> _sendCurrentPosition(Map<String, dynamic> extras) async {
+    if (!await _ensureLocationAccess(requireBackground: false)) return false;
+    if (!mounted) return false;
+    try {
+      await bg.BackgroundGeolocation.getCurrentPosition(
+        samples: 1,
+        persist: true,
+        extras: extras,
+      );
+      return true;
+    } on PlatformException catch (error) {
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(error.message ?? error.code)),
+      );
+      return false;
+    }
   }
 
   Future<void> _checkBatteryOptimizations(BuildContext context) async {
@@ -256,29 +379,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           if (!await PasswordService.authenticate(context)) return;
                           if (!context.mounted) return;
                           if (value) {
-                            try {
-                              FirebaseCrashlytics.instance.log('tracking_toggle_start');
-                              await bg.BackgroundGeolocation.start();
-                              if (context.mounted) _checkBatteryOptimizations(context);
-                            } on PlatformException catch (error) {
-                              final providerState = await bg.BackgroundGeolocation.providerState;
-                              final isPermissionError =
-                                  providerState.status == bg.ProviderChangeEvent.AUTHORIZATION_STATUS_DENIED ||
-                                  providerState.status == bg.ProviderChangeEvent.AUTHORIZATION_STATUS_RESTRICTED;
-                              if (!context.mounted) return;
-                              messengerKey.currentState?.showSnackBar(
-                                SnackBar(
-                                  content: Text(error.message ?? error.code),
-                                  duration: const Duration(seconds: 4),
-                                  action: isPermissionError
-                                      ? SnackBarAction(
-                                          label: l.settingsTitle,
-                                          onPressed: () => AppSettings.openAppSettings(type: AppSettingsType.settings),
-                                        )
-                                      : null,
-                                ),
-                              );
-                            }
+                            await _startTracking();
                           } else {
                             FirebaseCrashlytics.instance.log('tracking_toggle_stop');
                             bg.BackgroundGeolocation.stop();
@@ -295,19 +396,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
               children: [
                 Expanded(
                   child: FilledButton.tonalIcon(
-                    onPressed: () async {
-                      try {
-                        await bg.BackgroundGeolocation.getCurrentPosition(
-                          samples: 1,
-                          persist: true,
-                          extras: {'manual': true},
-                        );
-                      } on PlatformException catch (error) {
-                        messengerKey.currentState?.showSnackBar(
-                          SnackBar(content: Text(error.message ?? error.code)),
-                        );
-                      }
-                    },
+                    onPressed: () => _sendCurrentPosition({'manual': true}),
                     icon: const Icon(Icons.my_location_rounded),
                     label: Text(l.locationButton),
                     style: FilledButton.styleFrom(
@@ -340,25 +429,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
               width: double.infinity,
               child: FilledButton.icon(
                 onPressed: () async {
-                  try {
-                    FirebaseCrashlytics.instance.log('sos_button');
-                    await bg.BackgroundGeolocation.getCurrentPosition(
-                      samples: 1,
-                      persist: true,
-                      extras: {'alarm': 'sos'},
-                    );
-                    if (!context.mounted) return;
-                    messengerKey.currentState?.showSnackBar(
-                      SnackBar(
-                        content: Text(l.sosSentSuccess),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  } on PlatformException catch (error) {
-                    messengerKey.currentState?.showSnackBar(
-                      SnackBar(content: Text(error.message ?? error.code)),
-                    );
-                  }
+                  FirebaseCrashlytics.instance.log('sos_button');
+                  final sent = await _sendCurrentPosition({'alarm': 'sos'});
+                  if (!sent || !context.mounted) return;
+                  messengerKey.currentState?.showSnackBar(
+                    SnackBar(
+                      content: Text(l.sosSentSuccess),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.emergency_rounded),
                 label: Text(l.sosAction),

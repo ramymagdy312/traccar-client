@@ -18,7 +18,10 @@ class DioClient {
   DioClient._();
 
   static const String baseUrl = 'https://fleet.hoppataxi.com';
-  static const Set<String> _trustedHosts = {'fleet.hoppataxi.com'};
+  static const Set<String> trustedHosts = {'fleet.hoppataxi.com'};
+
+  /// Whether [host] is allow-listed for incomplete / self-signed SSL chains.
+  static bool isTrustedHost(String host) => trustedHosts.contains(host);
 
   /// Marker for requests that must NOT go through the auth interceptor
   /// (login, refresh). Set as `Options(extra: {DioClient.skipAuthKey: true})`.
@@ -55,13 +58,15 @@ class DioClient {
       ),
     );
 
-    final adapter = IOHttpClientAdapter();
-    adapter.createHttpClient = () {
-      final client = HttpClient();
-      client.badCertificateCallback = (cert, host, port) => _trustedHosts.contains(host);
-      return client;
-    };
-    dio.httpClientAdapter = adapter;
+    dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () {
+        final client = HttpClient();
+        client.badCertificateCallback =
+            (cert, host, port) => isTrustedHost(host);
+        return client;
+      },
+      validateCertificate: (cert, host, port) => isTrustedHost(host),
+    );
 
     dio.interceptors.add(CookieManager(_cookieJar!));
     dio.interceptors.add(_AuthInterceptor(dio));

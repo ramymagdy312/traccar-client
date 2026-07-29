@@ -11,6 +11,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 
 import 'l10n/app_localizations.dart';
+import 'permissions/location_permission_service.dart';
 import 'screens/services_list_screen.dart';
 import 'status_screen.dart';
 import 'settings_screen.dart';
@@ -61,6 +62,42 @@ class _MainScreenState extends State<MainScreen> {
         isMoving = location.isMoving;
       });
     });
+  }
+
+  /// Shows the prominent disclosure when needed and requests location
+  /// permissions. Returns `true` only when the SDK may be asked for location.
+  Future<bool> _ensureLocationAccess({required bool requireBackground}) async {
+    final l = AppLocalizations.of(context)!;
+    final result = await LocationPermissionService.ensureAccess(
+      context,
+      requireBackground: requireBackground,
+    );
+    if (!mounted) return false;
+    switch (result) {
+      case LocationAccessResult.granted:
+        return true;
+      case LocationAccessResult.foregroundOnly:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text(l.locationBackgroundLimitedMessage)),
+        );
+        return true;
+      case LocationAccessResult.denied:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(l.locationPermissionDeniedMessage),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: l.settingsTitle,
+              onPressed: () => AppSettings.openAppSettings(
+                type: AppSettingsType.settings,
+              ),
+            ),
+          ),
+        );
+        return false;
+      case LocationAccessResult.disclosureDeclined:
+        return false;
+    }
   }
 
   Future<void> _checkBatteryOptimizations(BuildContext context) async {
@@ -123,6 +160,10 @@ class _MainScreenState extends State<MainScreen> {
               onChanged: (bool value) async {
                 if (await PasswordService.authenticate(context) && mounted) {
                   if (value) {
+                    if (!await _ensureLocationAccess(requireBackground: true)) {
+                      return;
+                    }
+                    if (!mounted) return;
                     try {
                       FirebaseCrashlytics.instance.log('tracking_toggle_start');
                       await bg.BackgroundGeolocation.start();
@@ -168,6 +209,9 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 FilledButton.tonal(
                   onPressed: () async {
+                    if (!await _ensureLocationAccess(requireBackground: false)) {
+                      return;
+                    }
                     try {
                       await bg.BackgroundGeolocation.getCurrentPosition(samples: 1, persist: true, extras: {'manual': true});
                     } on PlatformException catch (error) {

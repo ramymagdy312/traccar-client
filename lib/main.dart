@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:app_links/app_links.dart';
@@ -69,9 +68,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Production-friendly edge-to-edge system UI.
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  if (kDebugMode) {
-    HttpOverrides.global = DevHttpOverrides();
-  }
+  // fleet.hoppataxi.com currently presents an incomplete certificate chain;
+  // allow only that host (see DioClient.trustedHosts).
+  HttpOverrides.global = TrustedHostHttpOverrides();
   await Firebase.initializeApp();
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
   await Preferences.init();

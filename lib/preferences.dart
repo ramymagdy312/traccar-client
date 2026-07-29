@@ -24,6 +24,11 @@ class Preferences {
   static const String stopDetection = 'stop_detection';
   static const String password = 'password';
 
+  /// Set once the driver has accepted the background-location disclosure, so
+  /// the screen is not shown again on every launch.
+  static const String locationDisclosureAccepted =
+      'location_disclosure_accepted';
+
   static const String themeMode = 'theme_mode';
   static const String localeCode = 'locale_code';
 
@@ -62,6 +67,7 @@ class Preferences {
           wakelock,
           stopDetection,
           password,
+          locationDisclosureAccepted,
           themeMode,
           localeCode,
           lastTimestamp,
@@ -123,6 +129,10 @@ class Preferences {
                     instance.getBool(stopDetection) == false)
                 : null,
         showsBackgroundLocationIndicator: Platform.isIOS ? false : null,
+        // Stated explicitly (it is also the SDK default) so the narrower value
+        // used while stepping through the disclosure flow can never persist
+        // across launches.
+        locationAuthorizationRequest: 'Always',
       ),
       app: bg.AppConfig(
         enableHeadless: Platform.isAndroid ? true : null,

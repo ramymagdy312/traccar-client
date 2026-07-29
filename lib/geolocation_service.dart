@@ -5,8 +5,10 @@ import 'dart:math';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 import 'package:serb_tracker_client/location_cache.dart';
+import 'package:serb_tracker_client/permissions/location_permission_service.dart';
 import 'package:serb_tracker_client/preferences.dart';
 import 'package:wakelock_partial_android/wakelock_partial_android.dart';
 
@@ -46,6 +48,8 @@ class GeolocationService {
   }
 
   static Future<void> onHeartbeat(bg.HeartbeatEvent event) async {
+    // Heartbeats can fire headlessly, where no disclosure could be presented.
+    if (!await LocationPermissionService.hasAuthorization()) return;
     await bg.BackgroundGeolocation.getCurrentPosition(samples: 1, persist: true, extras: {'heartbeat': true});
   }
 
@@ -114,24 +118,79 @@ class GeolocationService {
   static double _degToRad(double degree) => degree * pi / 180.0;
 
   /// Returns the best available current coordinates (fresh GPS, then cache).
-  static Future<({double lat, double lng})> currentCoords() async {
+  ///
+  /// A fresh fix is only requested when location access has already been
+  /// granted, so this never raises a permission dialog on its own.
+  /// Prefer [resolveCoords] from UI flows that can present the disclosure.
+  static Future<({double lat, double lng})?> currentCoordsOrNull() async {
+    if (await LocationPermissionService.hasAuthorization()) {
+      try {
+        final location = await bg.BackgroundGeolocation.getCurrentPosition(
+          samples: 1,
+          persist: false,
+        );
+        final lat = location.coords.latitude;
+        final lng = location.coords.longitude;
+        if (_isValidCoord(lat, lng)) return (lat: lat, lng: lng);
+      } catch (error) {
+        developer.log('Failed to get current position', error: error);
+      }
+    }
+
+    final cached = LocationCache.get();
+    if (cached != null && _isValidCoord(cached.latitude, cached.longitude)) {
+      return (lat: cached.latitude, lng: cached.longitude);
+    }
+
+    return null;
+  }
+
+  /// Ensures disclosure + permission, then returns a real GPS fix (or cache).
+  /// Returns `null` when the driver declines, is denied, or no fix is available.
+  static Future<({double lat, double lng})?> resolveCoords(
+    BuildContext context,
+  ) async {
+    final access = await LocationPermissionService.ensureAccess(
+      context,
+      requireBackground: false,
+    );
+    if (access == LocationAccessResult.disclosureDeclined ||
+        access == LocationAccessResult.denied) {
+      return null;
+    }
+    return fetchCoords();
+  }
+
+  /// Reads a fresh GPS fix when already authorized, else the last cached point.
+  /// Never prompts for permission — callers must run [ensureAccess] first.
+  static Future<({double lat, double lng})?> fetchCoords() async {
     try {
       final location = await bg.BackgroundGeolocation.getCurrentPosition(
         samples: 1,
         persist: false,
       );
-      return (lat: location.coords.latitude, lng: location.coords.longitude);
+      final lat = location.coords.latitude;
+      final lng = location.coords.longitude;
+      if (_isValidCoord(lat, lng)) return (lat: lat, lng: lng);
     } catch (error) {
       developer.log('Failed to get current position', error: error);
     }
 
     final cached = LocationCache.get();
-    if (cached != null) {
+    if (cached != null && _isValidCoord(cached.latitude, cached.longitude)) {
       return (lat: cached.latitude, lng: cached.longitude);
     }
 
-    return (lat: 0.0, lng: 0.0);
+    return null;
   }
+
+  /// Legacy helper used by callers that cannot show UI. Prefer [resolveCoords].
+  static Future<({double lat, double lng})> currentCoords() async {
+    return await currentCoordsOrNull() ?? (lat: 0.0, lng: 0.0);
+  }
+
+  static bool _isValidCoord(double lat, double lng) =>
+      lat.abs() > 0.000001 || lng.abs() > 0.000001;
 }
 
 Future<void>? _firebaseInitialization;

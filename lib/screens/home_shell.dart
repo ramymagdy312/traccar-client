@@ -71,8 +71,11 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final username = Preferences.instance.getString(Preferences.username);
+    final isRepMan = _isRepMan;
     final l = AppLocalizations.of(context)!;
+    final roleLabel = isRepMan ? l.roleRepMan : l.roleDriver;
     return Scaffold(
       body: Column(
         children: [
@@ -82,10 +85,10 @@ class _HomeShellState extends State<HomeShell> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(12, 4, 8, 2),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
+                color: cs.surface,
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.shadow.withValues(alpha: 0.06),
+                    color: cs.shadow.withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -96,12 +99,12 @@ class _HomeShellState extends State<HomeShell> {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.6),
+                      color: cs.primaryContainer.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       Icons.person_rounded,
-                      color: theme.colorScheme.primary,
+                      color: cs.primary,
                       size: 22,
                     ),
                   ),
@@ -114,13 +117,13 @@ class _HomeShellState extends State<HomeShell> {
                         Text(
                           l.welcomeLabel,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                            color: cs.onSurfaceVariant,
                             height: 1.0,
                           ),
                         ),
                         Row(
                           children: [
-                            Expanded(
+                            Flexible(
                               child: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 220),
                                 switchInCurve: Curves.easeOutCubic,
@@ -148,18 +151,43 @@ class _HomeShellState extends State<HomeShell> {
                                 ),
                               ),
                             ),
-                            IconButton(
-                              tooltip: l.logoutTooltip,
-                              onPressed: _logout,
-                              icon: const Icon(Icons.logout_rounded),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints.tightFor(width: 36, height: 36),
+                            const SizedBox(width: 8),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: isRepMan
+                                    ? cs.tertiaryContainer.withValues(alpha: 0.85)
+                                    : cs.primaryContainer.withValues(alpha: 0.85),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                child: Text(
+                                  roleLabel,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: isRepMan
+                                        ? cs.onTertiaryContainer
+                                        : cs.onPrimaryContainer,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
+                  ),
+                  IconButton(
+                    tooltip: l.logoutTooltip,
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout_rounded),
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(width: 40, height: 40),
                   ),
                 ],
               ),
@@ -183,6 +211,15 @@ class _HomeShellState extends State<HomeShell> {
         items: _tabData,
       ),
     );
+  }
+
+  bool get _isRepMan {
+    final raw = Preferences.instance.getString(Preferences.roles) ?? '';
+    if (raw.isEmpty) return false;
+    return raw
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .contains('repman');
   }
 }
 

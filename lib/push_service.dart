@@ -6,6 +6,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 import 'package:serb_tracker_client/password_service.dart';
+import 'package:serb_tracker_client/permissions/location_permission_service.dart';
 
 import 'preferences.dart';
 
@@ -31,12 +32,16 @@ class PushService {
     FirebaseCrashlytics.instance.log('push_command: $command');
     switch (command) {
       case 'positionSingle':
+        // Remote commands are not a driver action and can arrive headlessly, so
+        // they may never trigger a permission dialog: skip when not authorized.
+        if (!await LocationPermissionService.hasAuthorization()) return;
         try {
           await bg.BackgroundGeolocation.getCurrentPosition(samples: 1, persist: true, extras: {'remote': true});
         } catch (error) {
           developer.log('Failed to get position', error: error);
         }
       case 'positionPeriodic':
+        if (!await LocationPermissionService.hasAuthorization()) return;
         await bg.BackgroundGeolocation.start();
       case 'positionStop':
         await bg.BackgroundGeolocation.stop();

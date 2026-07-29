@@ -39,8 +39,7 @@ class AuthApi {
         options: _skipAuthOptions,
       );
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      throw Exception('Login failed${status != null ? ' ($status)' : ''}');
+      throw Exception(_describeNetworkError(e, fallback: 'Login failed'));
     }
 
     final data = response.data;
@@ -82,6 +81,28 @@ class AuthApi {
         value.contains('unauthor');
   }
 
+  String _describeNetworkError(DioException e, {required String fallback}) {
+    final status = e.response?.statusCode;
+    final detail = (e.message ?? e.error?.toString() ?? '').toLowerCase();
+    final isCertificateError = e.type == DioExceptionType.badCertificate ||
+        detail.contains('certificate_verify_failed') ||
+        detail.contains('certificate') ||
+        detail.contains('handshake');
+
+    if (isCertificateError) {
+      return 'Secure connection failed. Check the server SSL certificate.';
+    }
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      return 'Connection timed out. Check your network and try again.';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'Unable to reach the server. Check your network and try again.';
+    }
+    return '$fallback${status != null ? ' ($status)' : ''}';
+  }
+
   /// Refresh the access token using the refresh-token cookie that was
   /// automatically stored by [DioClient]'s cookie jar during login.
   Future<AuthToken> refreshToken() async {
@@ -93,9 +114,8 @@ class AuthApi {
         options: _skipAuthOptions,
       );
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
       throw Exception(
-        'Refresh token failed${status != null ? ' ($status)' : ''}',
+        _describeNetworkError(e, fallback: 'Refresh token failed'),
       );
     }
 

@@ -1,7 +1,9 @@
+import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:serb_tracker_client/geolocation_service.dart';
 import 'package:serb_tracker_client/main.dart';
+import 'package:serb_tracker_client/permissions/location_permission_service.dart';
 import 'package:serb_tracker_client/preferences.dart';
 
 import '../api/fleet_api.dart';
@@ -453,7 +455,7 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     return int.tryParse(s ?? '');
   }
 
-  /// RepMan can close without odometer input; Driver / empty roles must enter it.
+  /// RepMan can close without odometer input; Driver / empty roles must enter it on end.
   bool get _isRepMan {
     final raw = Preferences.instance.getString(Preferences.roles) ?? '';
     if (raw.isEmpty) return false;
@@ -465,15 +467,8 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
 
   bool get _requiresMeterInput => !_isRepMan;
 
+  /// Start: confirmation only — meter is shown read-only for the driver to review.
   void _onStartOrder(ServiceOrder order) {
-    if (_requiresMeterInput) {
-      _showStartMeterDialog(order);
-    } else {
-      _showStartConfirmDialog(order);
-    }
-  }
-
-  void _showStartConfirmDialog(ServiceOrder order) {
     final l = AppLocalizations.of(context)!;
     final startMeter = order.maxKM ?? 0;
     showDialog(
@@ -512,49 +507,6 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     );
   }
 
-  void _showStartMeterDialog(ServiceOrder order) {
-    final l = AppLocalizations.of(context)!;
-    final suggested = order.maxKM ?? 0;
-    final controller = TextEditingController(text: '$suggested');
-    final key = GlobalKey<_MeterDialogState>();
-
-    showDialog(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            title: Text(l.startMeterTitle),
-            content: _MeterDialog(
-              key: key,
-              startMeter: suggested,
-              controller: controller,
-              isEnd: false,
-              l10n: l,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(l.cancelButton),
-              ),
-              FilledButton(
-                onPressed: () {
-                  final state = key.currentState;
-                  if (state == null) return;
-                  final meter = int.tryParse(controller.text.trim());
-                  final err = state.validateStart(meter);
-                  if (err != null) {
-                    state.setError(err);
-                    return;
-                  }
-                  Navigator.pop(ctx);
-                  _submitStart(order, meter!);
-                },
-                child: Text(l.startButton),
-              ),
-            ],
-          ),
-    );
-  }
-
   void _submitStart(ServiceOrder order, int meter) async {
     final l = AppLocalizations.of(context)!;
     final repId = _repId;
@@ -565,7 +517,8 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       return;
     }
     try {
-      final coords = await GeolocationService.currentCoords();
+      final coords = await _resolveServiceCoords();
+      if (coords == null) return;
       await _api.updateServiceStatus(
         repId: repId,
         sOSubId: order.sOSubId,
@@ -644,7 +597,6 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
               key: key,
               startMeter: startMeter,
               controller: controller,
-              isEnd: true,
               l10n: l,
             ),
             actions: [
@@ -682,7 +634,8 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       return;
     }
     try {
-      final coords = await GeolocationService.currentCoords();
+      final coords = await _resolveServiceCoords();
+      if (coords == null) return;
       await _api.updateServiceStatus(
         repId: repId,
         sOSubId: order.sOSubId,
@@ -704,19 +657,61 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       );
     }
   }
+
+  /// Runs the disclosure + permission flow, then fetches a real GPS fix.
+  /// Returns `null` (and shows feedback) when location cannot be obtained —
+  /// never falls back to `0.0` for service start/end.
+  Future<({double lat, double lng})?> _resolveServiceCoords() async {
+    final l = AppLocalizations.of(context)!;
+    final access = await LocationPermissionService.ensureAccess(
+      context,
+      requireBackground: false,
+    );
+    if (!mounted) return null;
+
+    if (access == LocationAccessResult.disclosureDeclined) {
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(l.locationRequiredForService)),
+      );
+      return null;
+    }
+    if (access == LocationAccessResult.denied) {
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(l.locationRequiredForService),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: l.settingsTitle,
+            onPressed: () => AppSettings.openAppSettings(
+              type: AppSettingsType.settings,
+            ),
+          ),
+        ),
+      );
+      return null;
+    }
+
+    final coords = await GeolocationService.fetchCoords();
+    if (!mounted) return null;
+    if (coords == null) {
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(l.locationUnavailableForService)),
+      );
+      return null;
+    }
+    return coords;
+  }
 }
 
 class _MeterDialog extends StatefulWidget {
   final int startMeter;
   final TextEditingController controller;
-  final bool isEnd;
   final AppLocalizations l10n;
 
   const _MeterDialog({
     super.key,
     required this.startMeter,
     required this.controller,
-    required this.isEnd,
     required this.l10n,
   });
 
@@ -732,12 +727,6 @@ class _MeterDialogState extends State<_MeterDialog> {
     setState(() => _error = msg);
   }
 
-  String? validateStart(int? meter) {
-    final l = widget.l10n;
-    if (meter == null || meter < 0) return l.enterValidNumber;
-    return null;
-  }
-
   String? validateEnd(int? meter) {
     final l = widget.l10n;
     if (meter == null) return l.enterValidNumber;
@@ -750,27 +739,6 @@ class _MeterDialogState extends State<_MeterDialog> {
   @override
   Widget build(BuildContext context) {
     final l = widget.l10n;
-    if (!widget.isEnd) {
-      return SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: widget.controller,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: l.startMeterInputLabel,
-                errorText: _error,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() => _error = null),
-            ),
-          ],
-        ),
-      );
-    }
-
     return SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
