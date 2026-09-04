@@ -9,6 +9,8 @@ import 'package:serb_tracker_client/preferences.dart';
 import '../api/fleet_api.dart';
 import '../l10n/app_localizations.dart';
 import '../models/service_order.dart';
+import '../onboarding/product_tour.dart';
+import '../onboarding/tour_step.dart';
 
 class ServicesListScreen extends StatefulWidget {
   const ServicesListScreen({super.key});
@@ -155,10 +157,17 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.search_rounded),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _showSearchDialog(),
+                TourStep(
+                  stepKey: TourKeys.search,
+                  title: l.tourSearchTitle,
+                  description: l.tourSearchBody,
+                  targetRadius: 999,
+                  targetPadding: const EdgeInsets.all(2),
+                  child: IconButton(
+                    icon: const Icon(Icons.search_rounded),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _showSearchDialog(),
+                  ),
                 ),
               ],
             ),
@@ -191,21 +200,28 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
   }
 
   Widget _buildFilterChips(ThemeData theme) {
+    final l = AppLocalizations.of(context)!;
     final counts = _countsForCurrentQuery();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _filterChip(theme, 0, _filterLabels[0], counts[0] ?? 0),
-            const SizedBox(width: 10),
-            _filterChip(theme, 1, _filterLabels[1], counts[1] ?? 0),
-            const SizedBox(width: 10),
-            _filterChip(theme, 2, _filterLabels[2], counts[2] ?? 0),
-            const SizedBox(width: 10),
-            _filterChip(theme, 3, _filterLabels[3], counts[3] ?? 0),
-          ],
+    return TourStep(
+      stepKey: TourKeys.filters,
+      title: l.tourFiltersTitle,
+      description: l.tourFiltersBody,
+      targetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _filterChip(theme, 0, _filterLabels[0], counts[0] ?? 0),
+              const SizedBox(width: 10),
+              _filterChip(theme, 1, _filterLabels[1], counts[1] ?? 0),
+              const SizedBox(width: 10),
+              _filterChip(theme, 2, _filterLabels[2], counts[2] ?? 0),
+              const SizedBox(width: 10),
+              _filterChip(theme, 3, _filterLabels[3], counts[3] ?? 0),
+            ],
+          ),
         ),
       ),
     );
@@ -308,14 +324,31 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
               padding: const EdgeInsets.all(12),
               itemCount: _filteredOrders.length,
               itemBuilder: (context, index) {
-                final child = _ServiceOrderCard(
+                // The walkthrough highlights the topmost card and its action.
+                final isTourAnchor = index == 0;
+                Widget child = _ServiceOrderCard(
                   order: _filteredOrders[index],
                   colorScheme: colorScheme,
                   startLabel: l.startButton,
                   endLabel: l.endButton,
                   onStart: () => _onStartOrder(_filteredOrders[index]),
                   onEnd: () => _onEndOrder(_filteredOrders[index]),
+                  tourActionDescription:
+                      isTourAnchor
+                          ? (_requiresMeterInput
+                              ? l.tourServiceActionBodyDriver
+                              : l.tourServiceActionBodyRepMan)
+                          : null,
                 );
+                if (isTourAnchor) {
+                  child = TourStep(
+                    stepKey: TourKeys.serviceCard,
+                    title: l.tourServiceCardTitle,
+                    description: l.tourServiceCardBody,
+                    targetRadius: 20,
+                    child: child,
+                  );
+                }
 
                 final disableAnimations =
                     MediaQuery.maybeOf(context)?.disableAnimations ?? false;
@@ -789,6 +822,10 @@ class _ServiceOrderCard extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onEnd;
 
+  /// Set on the card that anchors the walkthrough step for the start / end
+  /// action; the copy differs between supervisors and drivers.
+  final String? tourActionDescription;
+
   const _ServiceOrderCard({
     required this.order,
     required this.colorScheme,
@@ -796,7 +833,22 @@ class _ServiceOrderCard extends StatelessWidget {
     required this.endLabel,
     required this.onStart,
     required this.onEnd,
+    this.tourActionDescription,
   });
+
+  /// Marks the action button as a walkthrough step, but only on the card the
+  /// tour points at.
+  Widget _withTourStep(BuildContext context, Widget button) {
+    final description = tourActionDescription;
+    if (description == null) return button;
+    return TourStep(
+      stepKey: TourKeys.serviceAction,
+      title: AppLocalizations.of(context)!.tourServiceActionTitle,
+      description: description,
+      targetRadius: 14,
+      child: button,
+    );
+  }
 
   String _statusLabel(AppLocalizations l, int status) {
     switch (status) {
@@ -1105,38 +1157,41 @@ class _ServiceOrderCard extends StatelessWidget {
                     localeIsArabic
                         ? Alignment.centerLeft
                         : Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: btnAction,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: palette.accent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 12,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 2,
-                    shadowColor: palette.accent.withValues(alpha: 0.4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        status == 1
-                            ? Icons.stop_circle_rounded
-                            : Icons.play_circle_fill_rounded,
-                        size: 20,
+                child: _withTourStep(
+                  context,
+                  FilledButton(
+                    onPressed: btnAction,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: palette.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
                       ),
-                      const SizedBox(width: 8),
-                      Text(btnText),
-                    ],
+                      textStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 2,
+                      shadowColor: palette.accent.withValues(alpha: 0.4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          status == 1
+                              ? Icons.stop_circle_rounded
+                              : Icons.play_circle_fill_rounded,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(btnText),
+                      ],
+                    ),
                   ),
                 ),
               ),

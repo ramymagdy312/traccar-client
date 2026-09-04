@@ -13,6 +13,7 @@ import 'package:serb_tracker_client/main.dart';
 import 'package:wakelock_partial_android/wakelock_partial_android.dart';
 
 import 'l10n/app_localizations.dart';
+import 'onboarding/product_tour.dart';
 import 'preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -314,6 +315,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildTourTile(BuildContext context, ProductTour tour) {
+    final l = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: _tileLeading(Icons.school_outlined),
+      title: Text(
+        l.tourReplayLabel,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        l.tourReplaySubtitle,
+        style: TextStyle(color: cs.onSurfaceVariant),
+      ),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
+      onTap: tour.start,
+    );
+  }
+
   Widget _buildAppVersionTile(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
@@ -483,6 +506,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
+    final tour = TourScope.maybeOf(context);
     final isHighestAccuracy =
         Preferences.instance.getString(Preferences.accuracy) == 'highest';
     final distance = Preferences.instance.getInt(Preferences.distance);
@@ -605,6 +629,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _buildLanguageTile(context),
                 _buildThemeModeTile(context),
+                if (tour != null) _buildTourTile(context, tour),
                 _buildAppVersionTile(context),
                 _buildLogoutTile(context),
               ],

@@ -29,6 +29,10 @@ class Preferences {
   static const String locationDisclosureAccepted =
       'location_disclosure_accepted';
 
+  /// Version of the guided walkthrough the driver has already been through, so
+  /// it only replays when new steps are added.
+  static const String productTourVersion = 'product_tour_version';
+
   static const String themeMode = 'theme_mode';
   static const String localeCode = 'locale_code';
 
@@ -68,6 +72,7 @@ class Preferences {
           stopDetection,
           password,
           locationDisclosureAccepted,
+          productTourVersion,
           themeMode,
           localeCode,
           lastTimestamp,

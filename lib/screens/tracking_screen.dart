@@ -8,6 +8,8 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
 
 import '../l10n/app_localizations.dart';
+import '../onboarding/product_tour.dart';
+import '../onboarding/tour_step.dart';
 import '../permissions/location_permission_service.dart';
 import '../status_screen.dart';
 
@@ -361,30 +363,35 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: cs.surface.withValues(alpha: 0.88),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
-                      ),
-                      child: SwitchListTile(
-                        contentPadding: const EdgeInsetsDirectional.only(start: 14, end: 8),
-                        title: Text(
-                          l.trackingLabel,
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    TourStep(
+                      stepKey: TourKeys.trackingSwitch,
+                      title: l.tourTrackingSwitchTitle,
+                      description: l.tourTrackingSwitchBody,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: cs.surface.withValues(alpha: 0.88),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
                         ),
-                        value: trackingEnabled,
-                        activeTrackColor: isMoving == false ? cs.secondary : null,
-                        onChanged: (bool value) async {
-                          if (!await PasswordService.authenticate(context)) return;
-                          if (!context.mounted) return;
-                          if (value) {
-                            await _startTracking();
-                          } else {
-                            FirebaseCrashlytics.instance.log('tracking_toggle_stop');
-                            bg.BackgroundGeolocation.stop();
-                          }
-                        },
+                        child: SwitchListTile(
+                          contentPadding: const EdgeInsetsDirectional.only(start: 14, end: 8),
+                          title: Text(
+                            l.trackingLabel,
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          value: trackingEnabled,
+                          activeTrackColor: isMoving == false ? cs.secondary : null,
+                          onChanged: (bool value) async {
+                            if (!await PasswordService.authenticate(context)) return;
+                            if (!context.mounted) return;
+                            if (value) {
+                              await _startTracking();
+                            } else {
+                              FirebaseCrashlytics.instance.log('tracking_toggle_stop');
+                              bg.BackgroundGeolocation.stop();
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -392,60 +399,71 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => _sendCurrentPosition({'manual': true}),
-                    icon: const Icon(Icons.my_location_rounded),
-                    label: Text(l.locationButton),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            TourStep(
+              stepKey: TourKeys.trackingActions,
+              title: l.tourTrackingActionsTitle,
+              description: l.tourTrackingActionsBody,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => _sendCurrentPosition({'manual': true}),
+                      icon: const Icon(Icons.my_location_rounded),
+                      label: Text(l.locationButton),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.tonalIcon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const StatusScreen()),
-                      );
-                    },
-                    icon: const Icon(Icons.analytics_outlined),
-                    label: Text(l.statusButton),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const StatusScreen()),
+                        );
+                      },
+                      icon: const Icon(Icons.analytics_outlined),
+                      label: Text(l.statusButton),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () async {
-                  FirebaseCrashlytics.instance.log('sos_button');
-                  final sent = await _sendCurrentPosition({'alarm': 'sos'});
-                  if (!sent || !context.mounted) return;
-                  messengerKey.currentState?.showSnackBar(
-                    SnackBar(
-                      content: Text(l.sosSentSuccess),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.emergency_rounded),
-                label: Text(l.sosAction),
-                style: FilledButton.styleFrom(
-                  backgroundColor: cs.error,
-                  foregroundColor: cs.onError,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            TourStep(
+              stepKey: TourKeys.sos,
+              title: l.tourSosTitle,
+              description: l.tourSosBody,
+              targetRadius: 14,
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    FirebaseCrashlytics.instance.log('sos_button');
+                    final sent = await _sendCurrentPosition({'alarm': 'sos'});
+                    if (!sent || !context.mounted) return;
+                    messengerKey.currentState?.showSnackBar(
+                      SnackBar(
+                        content: Text(l.sosSentSuccess),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.emergency_rounded),
+                  label: Text(l.sosAction),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: cs.error,
+                    foregroundColor: cs.onError,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
                 ),
               ),
             ),

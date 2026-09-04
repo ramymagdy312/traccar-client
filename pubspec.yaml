@@ -1,7 +1,7 @@
 name: serb_tracker_client
 description: "Serb Tracker Client"
 publish_to: 'none'
-version: 1.0.5+5
+version: 1.0.7+7
 
 environment:
   sdk: ^3.7.2
@@ -25,7 +25,6 @@ dependencies:
   firebase_analytics: ^12.4.0
   firebase_crashlytics: ^5.2.1
   quick_actions: ^1.1.0
-  rate_my_app: ^2.4.0
   shared_preferences_android: ^2.4.23
   wakelock_partial_android: ^1.0.1
   flutter_secure_storage: ^10.2.0
@@ -33,6 +32,7 @@ dependencies:
   app_settings: ^7.0.0
   upgrader: ^12.5.0
   new_version_plus: ^1.0.1
+  showcaseview: ^5.1.0
 
 dev_dependencies:
   flutter_test:

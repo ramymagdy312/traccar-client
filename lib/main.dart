@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:app_links/app_links.dart';
 import 'package:new_version_plus/new_version_plus.dart';
-import 'package:rate_my_app/rate_my_app.dart';
 import 'package:serb_tracker_client/geolocation_service.dart';
 import 'package:serb_tracker_client/password_service.dart';
 import 'package:serb_tracker_client/push_service.dart';
@@ -92,7 +91,6 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
-  RateMyApp rateMyApp = RateMyApp(minDays: 0, minLaunches: 0);
   final NewVersionPlus _newVersion = NewVersionPlus();
 
   @override
@@ -107,14 +105,6 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final didShowUpdate = await _checkForAppUpdate();
       if (didShowUpdate || !mounted) return;
-      await rateMyApp.init();
-      if (mounted && rateMyApp.shouldOpenDialog) {
-        try {
-          await rateMyApp.showRateDialog(context);
-        } catch (error) {
-          developer.log('Failed to show rate dialog', error: error);
-        }
-      }
     });
   }
 

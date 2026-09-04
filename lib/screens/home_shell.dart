@@ -7,6 +7,8 @@ import '../l10n/app_localizations.dart';
 import '../auth/auth_gate.dart';
 import '../auth/auth_storage.dart';
 import '../auth/session_manager.dart';
+import '../onboarding/product_tour.dart';
+import '../onboarding/tour_step.dart';
 import '../preferences.dart';
 import 'services_list_screen.dart';
 import 'tracking_screen.dart';
@@ -29,6 +31,37 @@ class _HomeShellState extends State<HomeShell> {
     _NavItemData(key: 'tracking', icon: Icons.location_on_outlined, activeIcon: Icons.location_on_rounded),
     _NavItemData(key: 'settings', icon: Icons.settings_outlined, activeIcon: Icons.settings_rounded),
   ];
+
+  late final ProductTour _tour = ProductTour(selectTab: _selectTab);
+
+  @override
+  void initState() {
+    super.initState();
+    // Has to happen before the first TourStep in the tabs is built.
+    _tour.attach();
+    if (ProductTour.isPending) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startTour());
+    }
+  }
+
+  @override
+  void dispose() {
+    _tour.detach();
+    super.dispose();
+  }
+
+  /// Gives the service list a moment to load so its cards can be highlighted,
+  /// and keeps the tour off screen while a dialog is in front of it.
+  Future<void> _startTour() async {
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    await _tour.start();
+  }
+
+  Future<void> _selectTab(int index) async {
+    if (!mounted || _currentIndex == index) return;
+    setState(() => _currentIndex = index);
+  }
 
   Future<void> _logout() async {
     final l = AppLocalizations.of(context)!;
@@ -76,7 +109,7 @@ class _HomeShellState extends State<HomeShell> {
     final isRepMan = _isRepMan;
     final l = AppLocalizations.of(context)!;
     final roleLabel = isRepMan ? l.roleRepMan : l.roleDriver;
-    return Scaffold(
+    final shell = Scaffold(
       body: Column(
         children: [
           SafeArea(
@@ -152,26 +185,32 @@ class _HomeShellState extends State<HomeShell> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: isRepMan
-                                    ? cs.tertiaryContainer.withValues(alpha: 0.85)
-                                    : cs.primaryContainer.withValues(alpha: 0.85),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
+                            TourStep(
+                              stepKey: TourKeys.role,
+                              title: l.tourRoleTitle,
+                              description: l.tourRoleBody,
+                              targetRadius: 999,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: isRepMan
+                                      ? cs.tertiaryContainer.withValues(alpha: 0.85)
+                                      : cs.primaryContainer.withValues(alpha: 0.85),
+                                  borderRadius: BorderRadius.circular(999),
                                 ),
-                                child: Text(
-                                  roleLabel,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: isRepMan
-                                        ? cs.onTertiaryContainer
-                                        : cs.onPrimaryContainer,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.2,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  child: Text(
+                                    roleLabel,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: isRepMan
+                                          ? cs.onTertiaryContainer
+                                          : cs.onPrimaryContainer,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.2,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -182,12 +221,27 @@ class _HomeShellState extends State<HomeShell> {
                     ),
                   ),
                   IconButton(
-                    tooltip: l.logoutTooltip,
-                    onPressed: _logout,
-                    icon: const Icon(Icons.logout_rounded),
+                    tooltip: l.tourReplayLabel,
+                    onPressed: _tour.start,
+                    icon: const Icon(Icons.help_outline_rounded),
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                  ),
+                  TourStep(
+                    stepKey: TourKeys.logout,
+                    title: l.tourLogoutTitle,
+                    description: l.tourLogoutBody,
+                    targetRadius: 999,
+                    targetPadding: const EdgeInsets.all(2),
+                    child: IconButton(
+                      tooltip: l.logoutTooltip,
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout_rounded),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                    ),
                   ),
                 ],
               ),
@@ -211,6 +265,7 @@ class _HomeShellState extends State<HomeShell> {
         items: _tabData,
       ),
     );
+    return TourScope(tour: _tour, child: shell);
   }
 
   bool get _isRepMan {
@@ -248,6 +303,11 @@ class _PremiumNavBar extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final l = AppLocalizations.of(context)!;
     final labels = [l.servicesTabLabel, l.trackingTabLabel, l.settingsTabLabel];
+    final tourSteps = [
+      (key: TourKeys.tabServices, title: l.tourTabServicesTitle, body: l.tourTabServicesBody),
+      (key: TourKeys.tabTracking, title: l.tourTabTrackingTitle, body: l.tourTabTrackingBody),
+      (key: TourKeys.tabSettings, title: l.tourTabSettingsTitle, body: l.tourTabSettingsBody),
+    ];
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
 
     return ClipRRect(
@@ -275,12 +335,18 @@ class _PremiumNavBar extends StatelessWidget {
             children: List.generate(items.length, (i) {
               final selected = i == currentIndex;
               return Expanded(
-                child: _NavItem(
-                  icon: items[i].icon,
-                  activeIcon: items[i].activeIcon,
-                  label: labels[i],
-                  selected: selected,
-                  onTap: () => onTap(i),
+                child: TourStep(
+                  stepKey: tourSteps[i].key,
+                  title: tourSteps[i].title,
+                  description: tourSteps[i].body,
+                  targetPadding: const EdgeInsets.symmetric(vertical: 2),
+                  child: _NavItem(
+                    icon: items[i].icon,
+                    activeIcon: items[i].activeIcon,
+                    label: labels[i],
+                    selected: selected,
+                    onTap: () => onTap(i),
+                  ),
                 ),
               );
             }),
