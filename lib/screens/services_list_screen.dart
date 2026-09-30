@@ -1,5 +1,8 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
+    as bg;
 import 'package:intl/intl.dart';
 import 'package:serb_tracker_client/geolocation_service.dart';
 import 'package:serb_tracker_client/main.dart';
@@ -550,6 +553,8 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       return;
     }
     try {
+      final trackingOn = await _enableTrackingIfNeeded();
+      if (!trackingOn || !mounted) return;
       final coords = await _resolveServiceCoords();
       if (coords == null) return;
       await _api.updateServiceStatus(
@@ -688,6 +693,92 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       messengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
+    }
+  }
+
+  /// Turns continuous tracking on when a trip starts and it is still off.
+  /// Returns `false` when the driver refuses location access or start fails,
+  /// so the service is not marked started without tracking.
+  Future<bool> _enableTrackingIfNeeded() async {
+    final state = await bg.BackgroundGeolocation.state;
+    if (state.enabled) return true;
+    if (!mounted) return false;
+
+    final l = AppLocalizations.of(context)!;
+    final access = await LocationPermissionService.ensureAccess(
+      context,
+      requireBackground: true,
+    );
+    if (!mounted) return false;
+
+    switch (access) {
+      case LocationAccessResult.disclosureDeclined:
+        return false;
+      case LocationAccessResult.denied:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text(l.locationPermissionDeniedMessage),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: l.settingsTitle,
+              onPressed: () => AppSettings.openAppSettings(
+                type: AppSettingsType.settings,
+              ),
+            ),
+          ),
+        );
+        return false;
+      case LocationAccessResult.foregroundOnly:
+        messengerKey.currentState?.showSnackBar(
+          SnackBar(content: Text(l.locationBackgroundLimitedMessage)),
+        );
+      case LocationAccessResult.granted:
+        break;
+    }
+
+    try {
+      await bg.BackgroundGeolocation.start();
+      if (mounted) await _promptBatteryOptimization();
+      return true;
+    } on PlatformException catch (error) {
+      if (!mounted) return false;
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(error.message ?? error.code)),
+      );
+      return false;
+    } catch (error) {
+      if (!mounted) return false;
+      messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+      return false;
+    }
+  }
+
+  Future<void> _promptBatteryOptimization() async {
+    try {
+      if (await bg.DeviceSettings.isIgnoringBatteryOptimizations) return;
+      final request = await bg.DeviceSettings.showIgnoreBatteryOptimizations();
+      if (request.seen || !mounted) return;
+      final l = AppLocalizations.of(context)!;
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          scrollable: true,
+          content: Text(l.optimizationMessage),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                bg.DeviceSettings.show(request);
+              },
+              child: Text(l.okButton),
+            ),
+          ],
+        ),
+      );
+    } catch (error) {
+      debugPrint(error.toString());
     }
   }
 

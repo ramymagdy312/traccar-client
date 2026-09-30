@@ -1,7 +1,7 @@
 name: serb_tracker_client
 description: "Serb Tracker Client"
 publish_to: 'none'
-version: 1.0.7+7
+version: 1.0.8+9
 
 environment:
   sdk: ^3.7.2
@@ -45,3 +45,4 @@ flutter:
   generate: true
   assets:
     - assets/app_icon.png
+    - assets/ic_SerbTracker.png
