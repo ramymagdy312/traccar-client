@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../screens/home_shell.dart';
+import '../widgets/brand_loading_indicator.dart';
 import 'auth_storage.dart';
 import 'login_screen.dart';
 
@@ -32,7 +33,9 @@ class _AuthGateState extends State<AuthGate> {
       future: _tokenFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: BrandLoadingIndicator(size: 72)),
+          );
         }
 
         final token = snapshot.data;

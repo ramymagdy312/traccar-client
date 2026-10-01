@@ -14,6 +14,7 @@ import '../l10n/app_localizations.dart';
 import '../models/service_order.dart';
 import '../onboarding/product_tour.dart';
 import '../onboarding/tour_step.dart';
+import '../widgets/brand_loading_indicator.dart';
 
 class ServicesListScreen extends StatefulWidget {
   const ServicesListScreen({super.key});
@@ -24,7 +25,7 @@ class ServicesListScreen extends StatefulWidget {
 
 /// View states the screen can be in. Driven by a small set of source-of-truth
 /// flags below; never set directly.
-enum _ViewState { initialLoading, error, empty, content }
+enum _ViewState { loading, error, empty, content }
 
 class _ServicesListScreenState extends State<ServicesListScreen> {
   final FleetApi _api = FleetApi();
@@ -34,8 +35,11 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
 
   // ── State source-of-truth flags ──
   bool _isLoading = false;
-  bool _hasLoadedOnce = false;
   String? _error;
+
+  /// Bumped on every completed load so the list is rebuilt from scratch and
+  /// replays its entrance animation — visible proof that the page reloaded.
+  int _reloadToken = 0;
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -57,17 +61,17 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
   /// Derive the current view state from the source-of-truth flags.
   /// Keeping this as a pure getter avoids accidental drift between flags.
   _ViewState get _viewState {
-    if (_isLoading && !_hasLoadedOnce) return _ViewState.initialLoading;
+    if (_isLoading) return _ViewState.loading;
     if (_error != null && _allOrders.isEmpty) return _ViewState.error;
     if (_filteredOrders.isEmpty) return _ViewState.empty;
     return _ViewState.content;
   }
 
   /// Fetch services. Re-entrancy is guarded by [_isLoading] so that the user
-  /// cannot fire multiple requests by tapping reload repeatedly. On refresh
-  /// from a populated list, we keep the existing data on screen until the
-  /// new response arrives — no flicker — and surface failures via a SnackBar.
-  Future<void> _loadServices() async {
+  /// cannot fire multiple requests by tapping reload repeatedly. The whole
+  /// page swaps to the loading state and back, so a reload is always visible,
+  /// and failures are surfaced via a SnackBar.
+  Future<void> _loadServices({bool userInitiated = false}) async {
     if (_isLoading) return;
 
     setState(() {
@@ -87,26 +91,36 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       setState(() {
         _allOrders = list;
         _isLoading = false;
-        _hasLoadedOnce = true;
         _error = null;
+        _reloadToken++;
       });
       _applyFilter();
+      if (userInitiated && mounted) {
+        // Resolved here rather than up top: the first load runs from
+        // initState, where inherited widgets cannot be read yet.
+        final l = AppLocalizations.of(context)!;
+        messengerKey.currentState
+          ?..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(l.servicesRefreshed(_filteredOrders.length)),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+      }
     } catch (e) {
       if (!mounted) return;
       final message = e.toString().replaceFirst('Exception: ', '');
       setState(() {
         _isLoading = false;
-        _hasLoadedOnce = true;
         _error = message;
       });
       // Don't lose existing data on a refresh failure — keep it visible and
       // surface the error inline as a SnackBar instead.
       if (_allOrders.isNotEmpty) {
         messengerKey.currentState?.showSnackBar(
-          SnackBar(
-            content: Text(message),
-            behavior: SnackBarBehavior.floating,
-          ),
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
         );
       }
       _applyFilter();
@@ -283,48 +297,49 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
     final l = AppLocalizations.of(context)!;
 
     // Smooth transitions between Loading / Error / Empty / Content states.
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder:
-          (child, animation) =>
-              FadeTransition(opacity: animation, child: child),
-      child: KeyedSubtree(
-        key: ValueKey(_viewState),
-        child: switch (_viewState) {
-          _ViewState.initialLoading => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          _ViewState.error => _ScrollablePlaceholder(
-            onRefresh: _loadServices,
-            child: _StatePlaceholder(
-              icon: Icons.cloud_off_rounded,
-              iconColor: colorScheme.error,
-              title: l.failedToLoadTitle,
-              subtitle: _error,
-              buttonLabel: l.retryButton,
-              buttonIcon: Icons.replay_rounded,
-              onPressed: _loadServices,
-              isBusy: _isLoading,
+    return BrandRefreshIndicator(
+      onRefresh: () => _loadServices(userInitiated: true),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder:
+            (child, animation) =>
+                FadeTransition(opacity: animation, child: child),
+        child: KeyedSubtree(
+          // The token re-keys the subtree after every load, so a successful
+          // reload always plays the entrance animation again.
+          key: ValueKey('${_viewState.name}_$_reloadToken'),
+          child: switch (_viewState) {
+            _ViewState.loading => const _ScrollablePlaceholder(
+              child: BrandLoadingIndicator(),
             ),
-          ),
-          _ViewState.empty => _ScrollablePlaceholder(
-            onRefresh: _loadServices,
-            child: _StatePlaceholder(
-              icon: Icons.inbox_rounded,
-              iconColor: colorScheme.primary,
-              title: l.noServices,
-              subtitle: l.emptyServicesHint,
-              buttonLabel: l.reloadButton,
-              onPressed: _loadServices,
-              isBusy: _isLoading,
+            _ViewState.error => _ScrollablePlaceholder(
+              child: _StatePlaceholder(
+                icon: Icons.cloud_off_rounded,
+                iconColor: colorScheme.error,
+                title: l.failedToLoadTitle,
+                subtitle: _error,
+                buttonLabel: l.retryButton,
+                buttonIcon: Icons.replay_rounded,
+                onPressed: () => _loadServices(userInitiated: true),
+              ),
             ),
-          ),
-          _ViewState.content => RefreshIndicator(
-            onRefresh: _loadServices,
-            child: ListView.builder(
+            _ViewState.empty => _ScrollablePlaceholder(
+              child: _StatePlaceholder(
+                icon: Icons.inbox_rounded,
+                iconColor: colorScheme.primary,
+                title: l.noServices,
+                subtitle: l.emptyServicesHint,
+                buttonLabel: l.reloadButton,
+                onPressed: () => _loadServices(userInitiated: true),
+              ),
+            ),
+            _ViewState.content => ListView.builder(
               padding: const EdgeInsets.all(12),
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
               itemCount: _filteredOrders.length,
               itemBuilder: (context, index) {
                 // The walkthrough highlights the topmost card and its action.
@@ -379,8 +394,8 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
                 );
               },
             ),
-          ),
-        },
+          },
+        ),
       ),
     );
   }
@@ -495,10 +510,7 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
   bool get _isRepMan {
     final raw = Preferences.instance.getString(Preferences.roles) ?? '';
     if (raw.isEmpty) return false;
-    return raw
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .contains('repman');
+    return raw.split(',').map((e) => e.trim().toLowerCase()).contains('repman');
   }
 
   bool get _requiresMeterInput => !_isRepMan;
@@ -721,9 +733,10 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: l.settingsTitle,
-              onPressed: () => AppSettings.openAppSettings(
-                type: AppSettingsType.settings,
-              ),
+              onPressed:
+                  () => AppSettings.openAppSettings(
+                    type: AppSettingsType.settings,
+                  ),
             ),
           ),
         );
@@ -763,19 +776,20 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
       final l = AppLocalizations.of(context)!;
       showDialog<void>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          scrollable: true,
-          content: Text(l.optimizationMessage),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                bg.DeviceSettings.show(request);
-              },
-              child: Text(l.okButton),
+        builder:
+            (ctx) => AlertDialog(
+              scrollable: true,
+              content: Text(l.optimizationMessage),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    bg.DeviceSettings.show(request);
+                  },
+                  child: Text(l.okButton),
+                ),
+              ],
             ),
-          ],
-        ),
       );
     } catch (error) {
       debugPrint(error.toString());
@@ -806,9 +820,9 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
           duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: l.settingsTitle,
-            onPressed: () => AppSettings.openAppSettings(
-              type: AppSettingsType.settings,
-            ),
+            onPressed:
+                () =>
+                    AppSettings.openAppSettings(type: AppSettingsType.settings),
           ),
         ),
       );
@@ -1393,9 +1407,7 @@ class _InfoChip extends StatelessWidget {
 }
 
 /// Reusable empty/error placeholder. Composes an icon, title, optional
-/// subtitle and an optional action button. The button can show an inline
-/// busy indicator and is automatically disabled when [isBusy] is true so that
-/// rapid taps cannot fire concurrent requests.
+/// subtitle and an optional action button.
 class _StatePlaceholder extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
@@ -1404,7 +1416,6 @@ class _StatePlaceholder extends StatelessWidget {
   final String? buttonLabel;
   final IconData buttonIcon;
   final VoidCallback? onPressed;
-  final bool isBusy;
 
   const _StatePlaceholder({
     required this.icon,
@@ -1414,7 +1425,6 @@ class _StatePlaceholder extends StatelessWidget {
     this.buttonLabel,
     this.buttonIcon = Icons.refresh_rounded,
     this.onPressed,
-    this.isBusy = false,
   });
 
   @override
@@ -1464,17 +1474,8 @@ class _StatePlaceholder extends StatelessWidget {
           if (buttonLabel != null) ...[
             const SizedBox(height: 22),
             FilledButton.icon(
-              onPressed: isBusy ? null : onPressed,
-              icon: isBusy
-                  ? SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: cs.onPrimary,
-                      ),
-                    )
-                  : Icon(buttonIcon, size: 20),
+              onPressed: onPressed,
+              icon: Icon(buttonIcon, size: 20),
               label: Text(buttonLabel!),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
@@ -1493,31 +1494,27 @@ class _StatePlaceholder extends StatelessWidget {
   }
 }
 
-/// Wraps a placeholder so it lives inside a scrollable, enabling
-/// pull-to-refresh on empty/error states with no list to scroll.
+/// Wraps a placeholder so it lives inside a scrollable, keeping
+/// pull-to-refresh available on states with no list to scroll.
 class _ScrollablePlaceholder extends StatelessWidget {
   final Widget child;
-  final Future<void> Function() onRefresh;
 
-  const _ScrollablePlaceholder({required this.child, required this.onRefresh});
+  const _ScrollablePlaceholder({required this.child});
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: onRefresh,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: Center(child: child),
-            ),
-          );
-        },
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(child: child),
+          ),
+        );
+      },
     );
   }
 }

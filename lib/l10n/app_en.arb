@@ -165,5 +165,13 @@
   "tourTrackingActionsTitle": "Quick actions",
   "tourTrackingActionsBody": "Send your position right now, or open the status screen to check what has reached the server.",
   "tourSosTitle": "Emergency SOS",
-  "tourSosBody": "Sends an alert with your exact location to dispatch. Use it only in a real emergency."
+  "tourSosBody": "Sends an alert with your exact location to dispatch. Use it only in a real emergency.",
+  "servicesRefreshed": "{count, plural, =0{Updated — no trips right now} =1{Updated — 1 trip} other{Updated — {count} trips}}",
+  "@servicesRefreshed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

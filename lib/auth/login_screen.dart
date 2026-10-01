@@ -4,6 +4,7 @@ import 'package:serb_tracker_client/main.dart';
 import 'package:serb_tracker_client/preferences.dart';
 
 import '../l10n/app_localizations.dart';
+import '../widgets/brand_loading_indicator.dart';
 import 'auth_api.dart';
 import 'session_manager.dart';
 
@@ -117,8 +118,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 40),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(24),
+                        // The wordmark and the wheel are near-black ink, so
+                        // dark mode needs the variant that inverts them.
                         child: Image.asset(
-                          'assets/ic_SerbTracker.png',
+                          theme.brightness == Brightness.dark
+                              ? 'assets/ic_SerbTracker_dark.png'
+                              : 'assets/ic_SerbTracker.png',
                           width: 100,
                           height: 100,
                         ),
@@ -294,13 +299,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   child:
                                       _loading
-                                          ? SizedBox(
-                                            height: 22,
-                                            width: 22,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: colorScheme.onPrimary,
-                                            ),
+                                          ? BrandLoadingIndicator(
+                                            size: 24,
+                                            color: colorScheme.onPrimary,
                                           )
                                           : Text(
                                             AppLocalizations.of(
