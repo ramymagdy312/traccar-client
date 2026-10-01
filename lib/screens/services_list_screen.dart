@@ -14,6 +14,7 @@ import '../l10n/app_localizations.dart';
 import '../models/service_order.dart';
 import '../onboarding/product_tour.dart';
 import '../onboarding/tour_step.dart';
+import '../theme/brand.dart';
 import '../widgets/brand_loading_indicator.dart';
 
 class ServicesListScreen extends StatefulWidget {
@@ -247,8 +248,15 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
   Widget _filterChip(ThemeData theme, int value, String label, int count) {
     final selected = _statusFilter == value;
     final cs = theme.colorScheme;
-    final badgeBg = selected ? cs.primary : cs.surfaceContainerHighest;
-    final badgeFg = selected ? cs.onPrimary : cs.primary;
+    final isDark = theme.brightness == Brightness.dark;
+    final statusColor = switch (value) {
+      1 => isDark ? Brand.statusPendingAlt : Brand.statusPending,
+      2 => isDark ? Brand.statusActiveDark : Brand.statusActive,
+      3 => isDark ? Brand.statusDoneAlt : Brand.statusDone,
+      _ => cs.primary,
+    };
+    final badgeBg = selected ? statusColor : cs.surfaceContainerHighest;
+    final badgeFg = selected ? Colors.white : statusColor;
     return FilterChip(
       label: Row(
         mainAxisSize: MainAxisSize.min,
@@ -277,8 +285,16 @@ class _ServicesListScreenState extends State<ServicesListScreen> {
             _statusFilter = value;
             _applyFilter();
           }),
-      selectedColor: cs.primaryContainer,
-      checkmarkColor: cs.primary,
+      selectedColor: statusColor.withValues(alpha: isDark ? 0.22 : 0.14),
+      checkmarkColor: statusColor,
+      labelStyle: theme.textTheme.labelLarge?.copyWith(
+        color: selected ? statusColor : cs.onSurface,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      ),
+      side: BorderSide(
+        color:
+            selected ? statusColor.withValues(alpha: 0.55) : cs.outlineVariant,
+      ),
       showCheckmark: false,
     );
   }
@@ -979,28 +995,39 @@ class _ServiceOrderCard extends StatelessWidget {
     switch (status) {
       case 1:
         return (
-          accent: isDark ? const Color(0xFFE57373) : cs.error,
-          accentAlt: isDark ? const Color(0xFFFF8A65) : const Color(0xFFE57373),
+          accent: isDark ? Brand.statusActiveDark : Brand.statusActive,
+          accentAlt: isDark ? Brand.statusActiveAltDark : Brand.statusActiveAlt,
           container: cs.errorContainer,
           onContainer: cs.onErrorContainer,
           icon: Icons.play_arrow_rounded,
         );
       case 2:
         return (
-          accent: isDark ? const Color(0xFF43A047) : const Color(0xFF2E7D32),
-          accentAlt: isDark ? const Color(0xFF66BB6A) : const Color(0xFF43A047),
-          container: isDark ? const Color(0xFF16361C) : const Color(0xFFE8F5E9),
+          accent: isDark ? Brand.statusDoneAlt : Brand.statusDone,
+          accentAlt: isDark ? Brand.statusDoneDark : Brand.statusDoneAlt,
+          container:
+              isDark
+                  ? Brand.statusDoneContainerDark
+                  : Brand.statusDoneContainer,
           onContainer:
-              isDark ? const Color(0xFFB7F0C2) : const Color(0xFF1B5E20),
+              isDark
+                  ? Brand.statusDoneOnContainerDark
+                  : Brand.statusDoneOnContainer,
           icon: Icons.check_circle_rounded,
         );
       case 0:
       default:
         return (
-          accent: cs.primary,
-          accentAlt: isDark ? const Color(0xFF4DD0E1) : cs.tertiary,
-          container: cs.primaryContainer,
-          onContainer: cs.onPrimaryContainer,
+          accent: isDark ? Brand.statusPendingAlt : Brand.statusPending,
+          accentAlt: isDark ? Brand.statusPendingDark : Brand.statusPendingAlt,
+          container:
+              isDark
+                  ? Brand.statusPendingContainerDark
+                  : Brand.statusPendingContainer,
+          onContainer:
+              isDark
+                  ? Brand.statusPendingOnContainerDark
+                  : Brand.statusPendingOnContainer,
           icon: Icons.schedule_rounded,
         );
     }

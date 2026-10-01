@@ -5,7 +5,8 @@ import 'package:serb_tracker_client/main.dart';
 import 'package:serb_tracker_client/password_service.dart';
 import 'package:serb_tracker_client/preferences.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
+import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
+    as bg;
 
 import '../l10n/app_localizations.dart';
 import '../onboarding/product_tour.dart';
@@ -68,9 +69,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: l.settingsTitle,
-              onPressed: () => AppSettings.openAppSettings(
-                type: AppSettingsType.settings,
-              ),
+              onPressed:
+                  () => AppSettings.openAppSettings(
+                    type: AppSettingsType.settings,
+                  ),
             ),
           ),
         );
@@ -98,9 +100,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: l.settingsTitle,
-              onPressed: () => AppSettings.openAppSettings(
-                type: AppSettingsType.settings,
-              ),
+              onPressed:
+                  () => AppSettings.openAppSettings(
+                    type: AppSettingsType.settings,
+                  ),
             ),
           ),
         );
@@ -129,14 +132,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
         SnackBar(
           content: Text(error.message ?? error.code),
           duration: const Duration(seconds: 4),
-          action: isPermissionError
-              ? SnackBarAction(
-                  label: l.settingsTitle,
-                  onPressed: () => AppSettings.openAppSettings(
-                    type: AppSettingsType.settings,
-                  ),
-                )
-              : null,
+          action:
+              isPermissionError
+                  ? SnackBarAction(
+                    label: l.settingsTitle,
+                    onPressed:
+                        () => AppSettings.openAppSettings(
+                          type: AppSettingsType.settings,
+                        ),
+                  )
+                  : null,
         ),
       );
     } catch (error) {
@@ -169,23 +174,27 @@ class _TrackingScreenState extends State<TrackingScreen> {
   Future<void> _checkBatteryOptimizations(BuildContext context) async {
     try {
       if (!await bg.DeviceSettings.isIgnoringBatteryOptimizations) {
-        final request = await bg.DeviceSettings.showIgnoreBatteryOptimizations();
+        final request =
+            await bg.DeviceSettings.showIgnoreBatteryOptimizations();
         if (!request.seen && context.mounted) {
           showDialog(
             context: context,
-            builder: (_) => AlertDialog(
-              scrollable: true,
-              content: Text(AppLocalizations.of(context)!.optimizationMessage),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    bg.DeviceSettings.show(request);
-                  },
-                  child: Text(AppLocalizations.of(context)!.okButton),
+            builder:
+                (_) => AlertDialog(
+                  scrollable: true,
+                  content: Text(
+                    AppLocalizations.of(context)!.optimizationMessage,
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        bg.DeviceSettings.show(request);
+                      },
+                      child: Text(AppLocalizations.of(context)!.okButton),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
         }
       }
@@ -194,15 +203,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
     }
   }
 
-  ({
-    Color accent,
-    Color soft,
-    IconData icon,
-    String badge,
-    String subtitle,
-  }) _stateVisuals(ThemeData theme, AppLocalizations l) {
+  ({Color accent, Color soft, IconData icon, String badge, String subtitle})
+  _stateVisuals(ThemeData theme, AppLocalizations l) {
     final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
     if (!trackingEnabled) {
       return (
         accent: cs.outline,
@@ -221,11 +224,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
         subtitle: l.trackingSubtitleMoving,
       );
     }
-    final green = isDark ? const Color(0xFF66BB6A) : const Color(0xFF2E7D32);
-    final greenSoft = isDark ? const Color(0xFF1B3D24) : const Color(0xFFE8F5E9);
     return (
-      accent: green,
-      soft: greenSoft,
+      accent: cs.primary,
+      soft: cs.primaryContainer,
       icon: Icons.location_on_rounded,
       badge: l.trackingBadgeActive,
       subtitle: l.trackingSubtitleActive,
@@ -314,7 +315,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
                             child: Text(
                               v.badge,
                               style: theme.textTheme.labelLarge?.copyWith(
@@ -331,13 +335,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       decoration: BoxDecoration(
                         color: cs.surface.withValues(alpha: 0.82),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+                        border: Border.all(
+                          color: cs.outlineVariant.withValues(alpha: 0.4),
+                        ),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
-                            Icon(Icons.badge_outlined, size: 20, color: cs.onSurfaceVariant),
+                            Icon(
+                              Icons.badge_outlined,
+                              size: 20,
+                              color: cs.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
@@ -354,7 +367,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                 textAlign: TextAlign.end,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
                                 ),
                               ),
                             ),
@@ -371,23 +386,34 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         decoration: BoxDecoration(
                           color: cs.surface.withValues(alpha: 0.88),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color: cs.outlineVariant.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: SwitchListTile(
-                          contentPadding: const EdgeInsetsDirectional.only(start: 14, end: 8),
+                          contentPadding: const EdgeInsetsDirectional.only(
+                            start: 14,
+                            end: 8,
+                          ),
                           title: Text(
                             l.trackingLabel,
-                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           value: trackingEnabled,
-                          activeTrackColor: isMoving == false ? cs.secondary : null,
+                          activeTrackColor:
+                              isMoving == false ? cs.secondary : null,
                           onChanged: (bool value) async {
-                            if (!await PasswordService.authenticate(context)) return;
+                            if (!await PasswordService.authenticate(context))
+                              return;
                             if (!context.mounted) return;
                             if (value) {
                               await _startTracking();
                             } else {
-                              FirebaseCrashlytics.instance.log('tracking_toggle_stop');
+                              FirebaseCrashlytics.instance.log(
+                                'tracking_toggle_stop',
+                              );
                               bg.BackgroundGeolocation.stop();
                             }
                           },
@@ -412,7 +438,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       label: Text(l.locationButton),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),
@@ -422,14 +450,18 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const StatusScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const StatusScreen(),
+                          ),
                         );
                       },
                       icon: const Icon(Icons.analytics_outlined),
                       label: Text(l.statusButton),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
                     ),
                   ),
@@ -462,7 +494,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     backgroundColor: cs.error,
                     foregroundColor: cs.onError,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),

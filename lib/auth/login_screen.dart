@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_background_geolocation/flutter_background_geolocation.dart' as bg;
+import 'package:flutter_background_geolocation/flutter_background_geolocation.dart'
+    as bg;
 import 'package:serb_tracker_client/main.dart';
 import 'package:serb_tracker_client/preferences.dart';
 
@@ -53,7 +54,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final repId = token.repId ?? token.userId;
       if (repId != null) {
         await Preferences.instance.setString(Preferences.id, repId.toString());
-        await bg.BackgroundGeolocation.setConfig(Preferences.geolocationConfig(true));
+        await bg.BackgroundGeolocation.setConfig(
+          Preferences.geolocationConfig(true),
+        );
       }
       final username = token.userName;
       if (username != null && username.isNotEmpty) {
@@ -77,10 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ? l.invalidCredentials
               : e.toString().replaceFirst('Exception: ', '');
       messengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text(message),
-          behavior: SnackBarBehavior.floating,
-        ),
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -101,7 +101,9 @@ class _LoginScreenState extends State<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              colorScheme.primary.withValues(alpha: 0.08),
+              colorScheme.primary.withValues(
+                alpha: theme.brightness == Brightness.dark ? 0.18 : 0.12,
+              ),
               colorScheme.surface,
             ],
           ),

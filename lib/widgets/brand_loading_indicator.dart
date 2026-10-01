@@ -75,7 +75,7 @@ class _BrandLoadingIndicatorState extends State<BrandLoadingIndicator>
         height: widget.size,
         fit: BoxFit.contain,
         excludeFromSemantics: true,
-        color: widget.color ?? Theme.of(context).colorScheme.onSurface,
+        color: widget.color ?? Theme.of(context).colorScheme.primary,
         colorBlendMode: BlendMode.srcIn,
       ),
     );

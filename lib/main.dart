@@ -21,6 +21,7 @@ import 'auth/auth_gate.dart';
 import 'preferences.dart';
 import 'configuration_service.dart';
 import 'dev_http_overrides.dart';
+import 'theme/brand.dart';
 
 final messengerKey = GlobalKey<ScaffoldMessengerState>();
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -165,9 +166,6 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     });
   }
 
-  static const Color _primaryLight = Color(0xFF0D7377);
-  static const Color _primaryDark = Color(0xFF14A3A8);
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ThemeMode>(
@@ -194,140 +192,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
                       child: child ?? const SizedBox.shrink(),
                     );
                   },
-                  theme: ThemeData(
-                    useMaterial3: true,
-                    colorScheme: ColorScheme.fromSeed(
-                      seedColor: _primaryLight,
-                      primary: _primaryLight,
-                      brightness: Brightness.light,
-                      surface: const Color(0xFFF7FAFA),
-                    ),
-                    appBarTheme: const AppBarTheme(
-                      centerTitle: true,
-                      elevation: 0,
-                      scrolledUnderElevation: 1,
-                    ),
-                    cardTheme: CardThemeData(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                    ),
-                    inputDecorationTheme: InputDecorationTheme(
-                      filled: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFFE0E5E5)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: _primaryLight,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    filledButtonTheme: FilledButtonThemeData(
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                    chipTheme: ChipThemeData(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    navigationBarTheme: const NavigationBarThemeData(
-                      elevation: 8,
-                      height: 70,
-                    ),
-                  ),
-                  darkTheme: ThemeData(
-                    useMaterial3: true,
-                    colorScheme: ColorScheme.fromSeed(
-                      seedColor: _primaryDark,
-                      primary: _primaryDark,
-                      brightness: Brightness.dark,
-                      surface: const Color(0xFF1A1C1E),
-                    ),
-                    appBarTheme: const AppBarTheme(
-                      centerTitle: true,
-                      elevation: 0,
-                      scrolledUnderElevation: 1,
-                    ),
-                    cardTheme: CardThemeData(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                    ),
-                    inputDecorationTheme: InputDecorationTheme(
-                      filled: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: Color(0xFF3D4043)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(
-                          color: _primaryDark,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    filledButtonTheme: FilledButtonThemeData(
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                    chipTheme: ChipThemeData(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                    ),
-                    navigationBarTheme: const NavigationBarThemeData(
-                      elevation: 8,
-                      height: 70,
-                    ),
-                  ),
+                  theme: Brand.light,
+                  darkTheme: Brand.dark,
                   home: Stack(
                     children: const [QuickActionsInitializer(), AuthGate()],
                   ),
