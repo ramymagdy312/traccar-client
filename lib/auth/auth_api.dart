@@ -10,6 +10,13 @@ class InvalidCredentialsException implements Exception {
   String toString() => 'Invalid credentials';
 }
 
+class MissingRolesException implements Exception {
+  const MissingRolesException();
+
+  @override
+  String toString() => 'Account has no assigned role';
+}
+
 class AuthApi {
   final Dio _dio;
   final String _loginPath;
@@ -19,9 +26,9 @@ class AuthApi {
     Dio? dio,
     String loginPath = '/Account/getAuthToken',
     String refreshPath = '/Account/RefreshToken',
-  })  : _dio = dio ?? DioClient.instance,
-        _loginPath = loginPath,
-        _refreshPath = refreshPath;
+  }) : _dio = dio ?? DioClient.instance,
+       _loginPath = loginPath,
+       _refreshPath = refreshPath;
 
   static final Options _skipAuthOptions = Options(
     extra: const {DioClient.skipAuthKey: true},
@@ -53,7 +60,12 @@ class AuthApi {
       if (_isAuthenticationFailure(payload, token)) {
         throw const InvalidCredentialsException();
       }
-      throw Exception(token.error?.isNotEmpty == true ? token.error : 'Login failed');
+      throw Exception(
+        token.error?.isNotEmpty == true ? token.error : 'Login failed',
+      );
+    }
+    if (token.roles.isEmpty) {
+      throw const MissingRolesException();
     }
     return token;
   }
@@ -84,7 +96,8 @@ class AuthApi {
   String _describeNetworkError(DioException e, {required String fallback}) {
     final status = e.response?.statusCode;
     final detail = (e.message ?? e.error?.toString() ?? '').toLowerCase();
-    final isCertificateError = e.type == DioExceptionType.badCertificate ||
+    final isCertificateError =
+        e.type == DioExceptionType.badCertificate ||
         detail.contains('certificate_verify_failed') ||
         detail.contains('certificate') ||
         detail.contains('handshake');

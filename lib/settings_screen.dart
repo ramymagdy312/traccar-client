@@ -47,20 +47,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final l = AppLocalizations.of(context)!;
     final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l.logoutTooltip),
-        content: Text(l.logoutConfirmMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l.cancelButton),
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(l.logoutTooltip),
+            content: Text(l.logoutConfirmMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(l.cancelButton),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(l.logoutTooltip),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l.logoutTooltip),
-          ),
-        ],
-      ),
     );
     if (shouldLogout != true || !mounted) return;
 
@@ -165,7 +166,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _sectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+  Widget _sectionCard(
+    BuildContext context, {
+    required String title,
+    required List<Widget> children,
+  }) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -177,7 +182,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(18),
         side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
       ),
-      color: cs.surface.withValues(alpha: theme.brightness == Brightness.dark ? 0.92 : 0.98),
+      color: cs.surface.withValues(
+        alpha: theme.brightness == Brightness.dark ? 0.92 : 0.98,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -212,46 +219,88 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildLanguageTile(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
-    final code = Preferences.instance.getString(Preferences.localeCode) ?? 'system';
+    final code =
+        Preferences.instance.getString(Preferences.localeCode) ?? 'system';
     final subtitle = switch (code) {
       'ar' => l.languageArabic,
       'en' => l.languageEnglish,
+      'de' => l.languageGerman,
+      'es' => l.languageSpanish,
+      'fr' => l.languageFrench,
       _ => l.languageSystem,
     };
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: _tileLeading(Icons.language_rounded),
-      title: Text(l.languageLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(
+        l.languageLabel,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: Text(subtitle, style: TextStyle(color: cs.onSurfaceVariant)),
-      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
       onTap: () async {
         final chosen = await showDialog<String>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(l.languageLabel),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  title: Text(l.languageSystem),
-                  onTap: () => Navigator.pop(ctx, 'system'),
+          builder:
+              (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  title: Text(l.languageArabic),
-                  onTap: () => Navigator.pop(ctx, 'ar'),
+                title: Text(l.languageLabel),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(l.languageSystem),
+                        onTap: () => Navigator.pop(ctx, 'system'),
+                      ),
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(l.languageArabic),
+                        onTap: () => Navigator.pop(ctx, 'ar'),
+                      ),
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(l.languageEnglish),
+                        onTap: () => Navigator.pop(ctx, 'en'),
+                      ),
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(l.languageGerman),
+                        onTap: () => Navigator.pop(ctx, 'de'),
+                      ),
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(l.languageSpanish),
+                        onTap: () => Navigator.pop(ctx, 'es'),
+                      ),
+                      ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: Text(l.languageFrench),
+                        onTap: () => Navigator.pop(ctx, 'fr'),
+                      ),
+                    ],
+                  ),
                 ),
-                ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  title: Text(l.languageEnglish),
-                  onTap: () => Navigator.pop(ctx, 'en'),
-                ),
-              ],
-            ),
-          ),
+              ),
         );
         if (chosen != null) {
           await Preferences.instance.setString(Preferences.localeCode, chosen);
@@ -266,48 +315,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final l = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     final mode = appThemeModeNotifier.value;
-    final subtitle = mode == ThemeMode.light
-        ? l.themeModeLight
-        : mode == ThemeMode.dark
+    final subtitle =
+        mode == ThemeMode.light
+            ? l.themeModeLight
+            : mode == ThemeMode.dark
             ? l.themeModeDark
             : l.themeModeSystem;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: _tileLeading(Icons.palette_rounded),
-      title: Text(l.themeModeLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(
+        l.themeModeLabel,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
       subtitle: Text(subtitle, style: TextStyle(color: cs.onSurfaceVariant)),
-      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
       onTap: () async {
         final chosen = await showDialog<ThemeMode>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text(l.themeModeLabel),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  title: Text(l.themeModeSystem),
-                  onTap: () => Navigator.pop(ctx, ThemeMode.system),
+          builder:
+              (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  title: Text(l.themeModeLight),
-                  onTap: () => Navigator.pop(ctx, ThemeMode.light),
+                title: Text(l.themeModeLabel),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      title: Text(l.themeModeSystem),
+                      onTap: () => Navigator.pop(ctx, ThemeMode.system),
+                    ),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      title: Text(l.themeModeLight),
+                      onTap: () => Navigator.pop(ctx, ThemeMode.light),
+                    ),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      title: Text(l.themeModeDark),
+                      onTap: () => Navigator.pop(ctx, ThemeMode.dark),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  title: Text(l.themeModeDark),
-                  onTap: () => Navigator.pop(ctx, ThemeMode.dark),
-                ),
-              ],
-            ),
-          ),
+              ),
         );
         if (chosen != null) {
           appThemeModeNotifier.value = chosen;
-          final value = chosen == ThemeMode.light ? 'light' : chosen == ThemeMode.dark ? 'dark' : 'system';
+          final value =
+              chosen == ThemeMode.light
+                  ? 'light'
+                  : chosen == ThemeMode.dark
+                  ? 'dark'
+                  : 'system';
           await Preferences.instance.setString(Preferences.themeMode, value);
           if (mounted) setState(() {});
         }
@@ -347,10 +417,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         l.appVersionLabel,
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
-      subtitle: Text(
-        _appVersion,
-        style: TextStyle(color: cs.onSurfaceVariant),
-      ),
+      subtitle: Text(_appVersion, style: TextStyle(color: cs.onSurfaceVariant)),
     );
   }
 
@@ -384,7 +451,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             scrollable: true,
             title: Text(title),
             content: TextField(
@@ -418,7 +487,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       } else {
         await Preferences.instance.setString(key, result);
       }
-      await bg.BackgroundGeolocation.setConfig(Preferences.geolocationConfig(true));
+      await bg.BackgroundGeolocation.setConfig(
+        Preferences.geolocationConfig(true),
+      );
       setState(() {});
     }
   }
@@ -446,7 +517,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: cs.onSurfaceVariant),
       ),
-      trailing: Icon(Icons.edit_outlined, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.65)),
+      trailing: Icon(
+        Icons.edit_outlined,
+        size: 20,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.65),
+      ),
       onTap: () => _editSetting(title, key, isInt),
     );
   }
@@ -465,13 +540,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _getAccuracyLabel(Preferences.instance.getString(Preferences.accuracy)),
         style: TextStyle(color: cs.onSurfaceVariant),
       ),
-      trailing: Icon(Icons.chevron_right_rounded, color: cs.onSurfaceVariant.withValues(alpha: 0.7)),
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
       onTap: () async {
         final selectedAccuracy = await showDialog<String>(
           context: context,
           builder:
               (context) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 title: Text(AppLocalizations.of(context)!.accuracyLabel),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -479,7 +559,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       accuracyOptions
                           .map(
                             (option) => ListTile(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                               title: Text(_getAccuracyLabel(option)),
                               onTap: () => Navigator.pop(context, option),
                             ),
@@ -545,7 +627,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SwitchListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         secondary: _tileLeading(Icons.tune_rounded),
-        title: Text(l.advancedLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          l.advancedLabel,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         value: advanced,
         activeTrackColor: cs.secondary.withValues(alpha: 0.65),
         onChanged: (value) {
@@ -560,9 +645,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Icons.speed_rounded,
         ),
         SwitchListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
           secondary: _tileLeading(Icons.cloud_queue_rounded),
-          title: Text(l.bufferLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+          title: Text(
+            l.bufferLabel,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           value: Preferences.instance.getBool(Preferences.buffer) ?? true,
           activeTrackColor: cs.secondary.withValues(alpha: 0.65),
           onChanged: (value) async {
@@ -575,11 +666,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         if (Platform.isAndroid)
           SwitchListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 4,
+            ),
             secondary: _tileLeading(Icons.stay_current_portrait_rounded),
-            title: Text(l.wakelockLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
-            value:
-                Preferences.instance.getBool(Preferences.wakelock) ?? false,
+            title: Text(
+              l.wakelockLabel,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            value: Preferences.instance.getBool(Preferences.wakelock) ?? false,
             activeTrackColor: cs.secondary.withValues(alpha: 0.65),
             onChanged: (value) async {
               await Preferences.instance.setBool(Preferences.wakelock, value);
@@ -595,12 +691,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
         SwitchListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
           secondary: _tileLeading(Icons.pause_circle_outline_rounded),
-          title: Text(l.stopDetectionLabel, style: const TextStyle(fontWeight: FontWeight.w600)),
+          title: Text(
+            l.stopDetectionLabel,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           value:
-              Preferences.instance.getBool(Preferences.stopDetection) ??
-              true,
+              Preferences.instance.getBool(Preferences.stopDetection) ?? true,
           activeTrackColor: cs.secondary.withValues(alpha: 0.65),
           onChanged: (value) async {
             await Preferences.instance.setBool(

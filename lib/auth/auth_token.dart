@@ -27,9 +27,11 @@ class AuthToken {
 
   factory AuthToken.fromJson(Map<String, dynamic> json) {
     final rawUserId = json['userId'] ?? json['User_Id'];
-    final parsedUserId = rawUserId is num ? rawUserId.toInt() : int.tryParse('$rawUserId');
+    final parsedUserId =
+        rawUserId is num ? rawUserId.toInt() : int.tryParse('$rawUserId');
     final rawRepId = json['Rep_Id'];
-    final parsedRepId = rawRepId is num ? rawRepId.toInt() : int.tryParse('$rawRepId');
+    final parsedRepId =
+        rawRepId is num ? rawRepId.toInt() : int.tryParse('$rawRepId');
     return AuthToken(
       accessToken: (json['access_token'] as String?) ?? '',
       tokenType: (json['token_type'] as String?) ?? 'bearer',
@@ -46,11 +48,20 @@ class AuthToken {
   }
 
   static List<String> _parseRoles(dynamic raw) {
-    if (raw is! List) return const [];
-    return raw
-        .map((e) => e.toString().trim())
-        .where((e) => e.isNotEmpty)
-        .toList(growable: false);
+    if (raw is List) {
+      return raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toList(growable: false);
+    }
+    if (raw is String) {
+      return raw
+          .split(RegExp(r'[,;|]'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(growable: false);
+    }
+    return const [];
   }
 
   bool get isRepMan => roles.any((r) => r.toLowerCase() == 'repman');

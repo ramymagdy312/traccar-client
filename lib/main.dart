@@ -8,12 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:app_links/app_links.dart';
 import 'package:new_version_plus/new_version_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:serb_tracker_client/geolocation_service.dart';
 import 'package:serb_tracker_client/password_service.dart';
 import 'package:serb_tracker_client/push_service.dart';
 import 'package:serb_tracker_client/quick_actions.dart';
 
 import 'api/dio_client.dart';
+import 'app_update.dart';
 import 'auth/auth_storage.dart';
 import 'auth/session_manager.dart';
 import 'l10n/app_localizations.dart';
@@ -127,7 +129,21 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   Future<bool> _checkForAppUpdate() async {
     try {
       final versionStatus = await _newVersion.getVersionStatus();
-      if (!mounted || versionStatus == null || !versionStatus.canUpdate) {
+      if (!mounted || versionStatus == null) return false;
+
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return false;
+      final store =
+          versionStatus.originalStoreVersion ?? versionStatus.storeVersion;
+      developer.log(
+        'Update check: local=${info.version}+${info.buildNumber} store=$store',
+        name: 'AppUpdate',
+      );
+      if (!AppUpdate.isStoreNewer(
+        localVersion: info.version,
+        buildNumber: info.buildNumber,
+        storeVersion: store,
+      )) {
         return false;
       }
       final dialogContext = navigatorKey.currentContext;

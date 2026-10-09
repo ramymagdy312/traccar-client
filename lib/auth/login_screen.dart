@@ -78,6 +78,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final message =
           e is InvalidCredentialsException
               ? l.invalidCredentials
+              : e is MissingRolesException
+              ? l.missingRoles
               : e.toString().replaceFirst('Exception: ', '');
       messengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
