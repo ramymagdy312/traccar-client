@@ -117,11 +117,7 @@ class LocationPermissionService {
   static Future<int> _requestPermission() async {
     try {
       await bg.BackgroundGeolocation.setConfig(
-        bg.Config(
-          geolocation: const bg.GeoConfig(
-            locationAuthorizationRequest: 'Always',
-          ),
-        ),
+        Preferences.geolocationConfig(false, requestAuthorization: true),
       );
       return await bg.BackgroundGeolocation.requestPermission();
     } catch (error) {

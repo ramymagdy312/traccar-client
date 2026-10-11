@@ -23,7 +23,9 @@ class ConfigurationService {
     await _applyBoolParameter(parameters, Preferences.buffer);
     await _applyBoolParameter(parameters, Preferences.wakelock);
     await _applyBoolParameter(parameters, Preferences.stopDetection);
-    await bg.BackgroundGeolocation.setConfig(Preferences.geolocationConfig(true));
+    await bg.BackgroundGeolocation.setConfig(
+      Preferences.geolocationConfig(true, requestAuthorization: false),
+    );
   }
 
   static Future<void> _applyStringParameter(

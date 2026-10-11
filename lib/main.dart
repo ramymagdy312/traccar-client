@@ -15,6 +15,7 @@ import 'package:serb_tracker_client/push_service.dart';
 import 'package:serb_tracker_client/quick_actions.dart';
 
 import 'api/dio_client.dart';
+import 'app_bootstrap.dart';
 import 'app_update.dart';
 import 'auth/auth_storage.dart';
 import 'auth/session_manager.dart';
@@ -81,8 +82,7 @@ void main() async {
   await const AuthStorage().purgeLegacyCredentials();
   // Arm the silent token-refresh timer against any pre-existing session.
   await SessionManager.scheduleProactiveRefresh();
-  await GeolocationService.init();
-  await PushService.init();
+  PushService.registerBackgroundHandler();
   runApp(const MainApp());
 }
 
@@ -104,10 +104,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     if (saved != null) appThemeModeNotifier.value = _themeModeFromString(saved);
     final savedLocale = Preferences.instance.getString(Preferences.localeCode);
     appLocaleNotifier.value = _localeFromString(savedLocale);
-    _initLinks();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final didShowUpdate = await _checkForAppUpdate();
-      if (didShowUpdate || !mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_warmUpServices());
     });
   }
 
@@ -169,6 +167,27 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       );
       return false;
     }
+  }
+
+  Future<void> _warmUpServices() async {
+    try {
+      await GeolocationService.init();
+      if (!mounted) return;
+      await PushService.init();
+      if (!mounted) return;
+      await _initLinks();
+    } catch (error, stackTrace) {
+      developer.log(
+        'Plugin warm-up failed',
+        error: error,
+        stackTrace: stackTrace,
+        name: 'AppBootstrap',
+      );
+    } finally {
+      markAppServicesReady();
+    }
+    if (!mounted) return;
+    await _checkForAppUpdate();
   }
 
   Future<void> _initLinks() async {

@@ -94,12 +94,19 @@ class Preferences {
     }
   }
 
-  static bg.Config geolocationConfig(bool reset) {
+  /// [requestAuthorization] must stay false on cold start / login so iOS
+  /// never raises a location or Motion dialog before the Flutter disclosure.
+  static bg.Config geolocationConfig(
+    bool reset, {
+    bool requestAuthorization = true,
+  }) {
     final isHighestAccuracy = instance.getString(accuracy) == 'highest';
     final locationUpdateInterval = (instance.getInt(interval) ?? 0) * 1000;
     final fastestLocationUpdateInterval =
         (instance.getInt(fastestInterval) ?? 30) * 1000;
     final heartbeatInterval = instance.getInt(heartbeat) ?? 0;
+    final disclosureAccepted =
+        instance.getBool(locationDisclosureAccepted) ?? false;
     return bg.Config(
       reset: reset,
       isMoving: true,
@@ -134,10 +141,11 @@ class Preferences {
                     instance.getBool(stopDetection) == false)
                 : null,
         showsBackgroundLocationIndicator: Platform.isIOS ? false : null,
-        // Stated explicitly (it is also the SDK default) so the narrower value
-        // used while stepping through the disclosure flow can never persist
-        // across launches.
-        locationAuthorizationRequest: 'Always',
+        // 'Any' + no alert: ready()/setConfig must not raise an OS dialog.
+        // After the driver accepts the disclosure we switch back to Always.
+        disableLocationAuthorizationAlert: !requestAuthorization,
+        locationAuthorizationRequest:
+            requestAuthorization ? 'Always' : 'Any',
       ),
       app: bg.AppConfig(
         enableHeadless: Platform.isAndroid ? true : null,
@@ -176,6 +184,10 @@ class Preferences {
       ),
       activity: bg.ActivityConfig(
         disableStopDetection: instance.getBool(stopDetection) == false,
+        // First launch only: skip Motion & Fitness so ready() cannot freeze
+        // the phone. Keep it enabled once the driver has accepted disclosure.
+        disableMotionActivityUpdates:
+            !requestAuthorization && !disclosureAccepted,
       ),
       persistence: bg.PersistenceConfig(
         maxRecordsToPersist: instance.getBool(buffer) != false ? -1 : 1,

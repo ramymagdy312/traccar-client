@@ -13,8 +13,14 @@ import 'package:serb_tracker_client/preferences.dart';
 import 'package:wakelock_partial_android/wakelock_partial_android.dart';
 
 class GeolocationService {
+  static bool _initialized = false;
+
   static Future<void> init() async {
-    await bg.BackgroundGeolocation.ready(Preferences.geolocationConfig(false));
+    if (_initialized) return;
+    // Silent ready: never raise location / Motion dialogs at launch.
+    await bg.BackgroundGeolocation.ready(
+      Preferences.geolocationConfig(false, requestAuthorization: false),
+    );
     if (Platform.isAndroid) {
       await bg.BackgroundGeolocation.registerHeadlessTask(headlessTask);
     }
@@ -25,6 +31,7 @@ class GeolocationService {
     bg.BackgroundGeolocation.onLocation(onLocation, (bg.LocationError error) {
       developer.log('Location error', error: error);
     });
+    _initialized = true;
   }
 
   static Future<void> onEnabledChange(bool enabled) async {

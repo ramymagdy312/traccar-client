@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../api/dio_client.dart';
 import '../l10n/app_localizations.dart';
+import '../app_bootstrap.dart';
 import '../auth/auth_gate.dart';
 import '../auth/auth_storage.dart';
 import '../auth/session_manager.dart';
@@ -53,6 +54,7 @@ class _HomeShellState extends State<HomeShell> {
   /// Gives the service list a moment to load so its cards can be highlighted,
   /// and keeps the tour off screen while a dialog is in front of it.
   Future<void> _startTour() async {
+    await appServicesReady;
     await Future<void>.delayed(const Duration(milliseconds: 900));
     if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
     await _tour.start();

@@ -11,20 +11,39 @@ import 'package:serb_tracker_client/permissions/location_permission_service.dart
 import 'preferences.dart';
 
 class PushService {
-  static Future<void> init() async {
-    await FirebaseMessaging.instance.requestPermission();
+  static bool _handlersBound = false;
+
+  /// Must be registered before [runApp] (FlutterFire requirement).
+  static void registerBackgroundHandler() {
     FirebaseMessaging.onBackgroundMessage(pushServiceBackgroundHandler);
-    FirebaseMessaging.onMessage.listen(_onMessage);
-    FirebaseMessaging.instance.onTokenRefresh.listen(_uploadToken);
-    bg.BackgroundGeolocation.onEnabledChange((enabled) async {
-      if (enabled) {
-        try {
-          _uploadToken(await FirebaseMessaging.instance.getToken());
-        } catch (error) {
-          developer.log('Failed to get notificaion token', error: error);
+  }
+
+  static Future<void> init() async {
+    if (!_handlersBound) {
+      _handlersBound = true;
+      FirebaseMessaging.onMessage.listen(_onMessage);
+      FirebaseMessaging.instance.onTokenRefresh.listen(_uploadToken);
+      bg.BackgroundGeolocation.onEnabledChange((enabled) async {
+        if (enabled) {
+          try {
+            _uploadToken(await FirebaseMessaging.instance.getToken());
+          } catch (error) {
+            developer.log('Failed to get notificaion token', error: error);
+          }
         }
-      }
-    });
+      });
+    }
+    await _requestNotificationsIfNeeded();
+  }
+
+  /// Only prompts when iOS/Android have not asked yet, and only after the
+  /// first Flutter frame so it cannot stack on the launch screen.
+  static Future<void> _requestNotificationsIfNeeded() async {
+    final settings = await FirebaseMessaging.instance.getNotificationSettings();
+    if (settings.authorizationStatus != AuthorizationStatus.notDetermined) {
+      return;
+    }
+    await FirebaseMessaging.instance.requestPermission();
   }
 
   static Future<void> _onMessage(RemoteMessage message) async {
@@ -70,7 +89,9 @@ class PushService {
 Future<void> pushServiceBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   await Preferences.init();
-  await bg.BackgroundGeolocation.ready(Preferences.geolocationConfig(false));
+  await bg.BackgroundGeolocation.ready(
+    Preferences.geolocationConfig(false, requestAuthorization: false),
+  );
   FirebaseCrashlytics.instance.log('push_background_handler');
   await PushService._onMessage(message);
 }
